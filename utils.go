@@ -2,9 +2,12 @@ package main
 
 import (
 	"crypto/rand"
+	"fmt"
 	"io"
 	"log"
 	"math/big"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 )
@@ -50,4 +53,11 @@ func createFileWithName(name string) io.Writer {
 	}
 
 	return f
+}
+
+func startPprofServer(addr string) error {
+	if err := http.ListenAndServe(addr, nil); err != nil {
+		return fmt.Errorf("failed to start pprof-server: %w", err)
+	}
+	return nil
 }

@@ -10,6 +10,13 @@ import (
 )
 
 func RunCluster(rc *RawConfig) error {
+	go func() {
+		log.Println("[pprof] starting pprof server at http://", rc.HTTPPprofAddr)
+		err := startPprofServer(rc.HTTPPprofAddr)
+		if err != nil {
+			log.Println("[error] ", err)
+		}
+	}()
 	if rc.Mode == singleProcess {
 		singleProcessCluster(rc)
 		return nil
