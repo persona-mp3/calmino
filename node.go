@@ -4,6 +4,7 @@ import (
 	"io"
 	"log/slog"
 	"sync"
+	"time"
 )
 
 type Node struct {
@@ -16,6 +17,9 @@ type Node struct {
 
 	// connections hold rpc connections to different nodes
 	connections []*RPCConn
+
+	// networkCh is shared with the Server to intercept incoming network RPCs
+	networkCh chan RPC
 
 	server    *Server
 	raftState *RaftState
@@ -38,7 +42,6 @@ func NewNode(
 	peers []string,
 	logStore *LogStore,
 	raftState *RaftState,
-	server *Server,
 	config Configuration,
 ) *Node {
 	var logger *slog.Logger
@@ -55,13 +58,23 @@ func NewNode(
 			))
 	}
 
-	logger.Info("started logging")
+	networkCh := make(chan RPC)
+	server := NewServer(networkCh)
+
 	return &Node{
 		mu:        sync.Mutex{},
 		id:        id,
+		networkCh: networkCh,
 		server:    server,
 		raftState: raftState,
 		logStore:  logStore,
 		logger:    logger,
 	}
+}
+
+func (n *Node) Run() error {
+	<-time.After(n.raftState.electionTimeout)
+	// TODO: startServer
+	n.logger.Info("node recvd no hearbeat, transition to candidate")
+	return nil
 }

@@ -9,7 +9,9 @@ log_level = -4
 # log_format is 0 which is text logging and 1 for json structured logging
 log_format = 0
 http_pprof_addr = "localhost:6061"
-persist = true
+
+# persist writes logs to file
+persist = false
 
 [raft_config]
 heartbeat_interval = 800
