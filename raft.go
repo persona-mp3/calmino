@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -18,6 +19,8 @@ const (
 	NodeIdNone NodeId = ""
 )
 
+// RaftState stores information related to the nodes raft state. All values
+// should be accessed safely
 type RaftState struct {
 	mu sync.Mutex
 	// stores current term for the node
@@ -80,6 +83,26 @@ func (rs *RaftState) CurrentLeader() NodeId {
 	return rs.leader
 }
 
+// State returns the current state of the node
+func (rs *RaftState) State() State {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	return rs.state
+}
+
+// UpdateState updates the current state of the node
+func (rs *RaftState) UpdateState(s State) {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	rs.state = s
+}
+
+func (rs *RaftState) VoteHistory() map[uint64]NodeId {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	return rs.votedFor
+}
+
 // HasVotedFor checks if this node has voted for term. It returns true of a vote
 // for this term has been found
 func (rs *RaftState) HasVotedFor(term uint64) (NodeId, bool) {
@@ -93,4 +116,28 @@ func (rs *RaftState) ClearLeader() {
 	rs.mu.Lock()
 	defer rs.mu.Unlock()
 	rs.leader = NodeIdNone
+}
+
+// ElectionTimeout returns the timeout duration for the term
+func (rs *RaftState) ElectionTimeout() time.Duration {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	return rs.electionTimeout
+}
+
+// NewElectionTimeout returns a new timeout duration and updates the
+// returns the updated timeout duration
+func (rs *RaftState) NewElectionTimeout() time.Duration {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	d := randomDuration(time.Millisecond)
+	rs.electionTimeout = d
+	return d
+}
+
+func (rs *RaftState) String() string {
+	return fmt.Sprintf(
+		`RaftState: {currentState: %s, leader: %s, voteHistory: %+v}`,
+		rs.State(), rs.CurrentLeader(), rs.VoteHistory(),
+	)
 }

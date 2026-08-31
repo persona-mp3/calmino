@@ -1,8 +1,8 @@
 package main
 
 import (
+	db "calmino/database"
 	"fmt"
-	db "jraft/database"
 
 	"pgregory.net/rapid"
 )
