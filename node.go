@@ -64,6 +64,7 @@ func NewNode(
 	return &Node{
 		mu:        sync.Mutex{},
 		id:        id,
+		peers:     peers,
 		networkCh: networkCh,
 		server:    server,
 		raftState: raftState,
