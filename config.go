@@ -70,6 +70,10 @@ func (rc *RawConfig) ToConfig() (*Configuration, error) {
 		return nil, fmt.Errorf("addr cannot be empty")
 	}
 
+	HEARTBEAT_INTERVAL = rc.RaftConfig.HeartBeatInterval
+	ELECTION_INTERVAL_MIN = rc.RaftConfig.ElectionMin
+	ELECTION_INTERVAL_MAX = rc.RaftConfig.ElectionMax
+
 	configuration.Addrs = rc.Addrs
 	// TODO: create a way for writing to file to instead
 	configuration.Out = os.Stdout

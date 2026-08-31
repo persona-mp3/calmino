@@ -73,7 +73,8 @@ func NewNode(
 }
 
 func (n *Node) Run() error {
-	<-time.After(n.raftState.electionTimeout)
+	electionTimeout := n.raftState.ElectionTimeout()
+	<-time.After(electionTimeout)
 	// TODO: startServer
 	n.logger.Info("node recvd no hearbeat, transition to candidate")
 	return nil

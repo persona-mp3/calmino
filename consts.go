@@ -1,0 +1,7 @@
+package main
+
+var (
+	HEARTBEAT_INTERVAL    = uint(800)
+	ELECTION_INTERVAL_MIN = uint(1800)
+	ELECTION_INTERVAL_MAX = uint(2500)
+)

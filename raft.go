@@ -18,6 +18,8 @@ const (
 	NodeIdNone NodeId = ""
 )
 
+// RaftState stores information related to the nodes raft state. All values
+// should be accessed safely
 type RaftState struct {
 	mu sync.Mutex
 	// stores current term for the node
@@ -93,4 +95,21 @@ func (rs *RaftState) ClearLeader() {
 	rs.mu.Lock()
 	defer rs.mu.Unlock()
 	rs.leader = NodeIdNone
+}
+
+// ElectionTimeout returns the timeout duration for the term
+func (rs *RaftState) ElectionTimeout() time.Duration {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	return rs.electionTimeout
+}
+
+// NewElectionTimeout returns a new timeout duration and updates the
+// returns the updated timeout duration
+func (rs *RaftState) NewElectionTimeout() time.Duration {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	d := randomDuration(time.Millisecond)
+	rs.electionTimeout = d
+	return d
 }

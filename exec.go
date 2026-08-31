@@ -57,16 +57,3 @@ func singleProcessCluster(rc *RawConfig) {
 }
 
 func singleNodeCluster(rc *RawConfig) {}
-
-func createFileWithName(name string) io.Writer {
-	f, err := os.Create(name)
-	if err != nil {
-		f = os.Stdout
-		log.Println(
-			"[warn] could not create file: %s, reason: %s. using stdout",
-			name,
-			err)
-	}
-
-	return f
-}
