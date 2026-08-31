@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
 	"sync"
-	"time"
 )
 
 type Node struct {
@@ -22,7 +22,7 @@ type Node struct {
 	connections []*RPCConn
 
 	// networkCh is shared with the Server to intercept incoming network RPCs
-	networkCh chan RPC
+	networkCh chan RPCPayload
 
 	server    *Server
 	raftState *RaftState
@@ -61,8 +61,8 @@ func NewNode(
 			))
 	}
 
-	networkCh := make(chan RPC)
-	server := NewServer(addr, networkCh)
+	networkCh := make(chan RPCPayload)
+	server := NewServer(addr, networkCh, logger)
 
 	return &Node{
 		mu:         sync.Mutex{},
@@ -77,13 +77,27 @@ func NewNode(
 	}
 }
 
-func (n *Node) Run() error {
-	electionTimeout := n.raftState.ElectionTimeout()
-	<-time.After(electionTimeout)
-	// TODO: startServer
-	n.logger.Info("node recvd no hearbeat, transition to candidate")
-	n.logger.Info(n.Diagnostics())
-	return nil
+func (n *Node) Run(parentCtx context.Context) error {
+	ctx, cancel := context.WithCancel(parentCtx)
+	defer cancel()
+	errCh := make(chan error)
+	go func() {
+		if err := n.server.Run(ctx, "tcp", n.listenAddr); err != nil {
+			n.logger.Error("server failed with: ", slog.Any("err", err))
+			errCh <- err
+		}
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case err := <-errCh:
+			return err
+		case payload := <-n.networkCh:
+			n.logger.Info("recvd payload", slog.Any("payload", payload))
+		}
+	}
 }
 
 // Diagnositcs returns string represntation of the nodes current state

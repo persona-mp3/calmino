@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -50,10 +53,13 @@ func singleProcessCluster(rc *RawConfig) {
 		}
 	}
 
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGKILL)
+	defer cancel()
+
 	nodeWg := sync.WaitGroup{}
 	for _, node := range allNodes {
 		nodeWg.Go(func() {
-			if err := node.Run(); err != nil {
+			if err := node.Run(ctx); err != nil {
 				log.Println("could not start node:", node.id, err)
 			}
 		})
