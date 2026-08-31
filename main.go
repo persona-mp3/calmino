@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 )
 
@@ -21,10 +20,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	config, err := rawConfig.ToConfig()
-	if err != nil {
+	if err := RunCluster(rawConfig); err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(config)
 }
