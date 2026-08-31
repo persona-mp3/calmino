@@ -1,0 +1,26 @@
+# 2026/08/31 03:38:12.416254 [TestLogStoreSnapshotFrom] [rapid] draw logSize: 0x0
+# 2026/08/31 03:38:12.416255 [TestLogStoreSnapshotFrom] [rapid] draw logSize: 0x1
+# 2026/08/31 03:38:12.416255 [TestLogStoreSnapshotFrom] [rapid] draw logTerm: 0x0
+# 2026/08/31 03:38:12.416258 [TestLogStoreSnapshotFrom] [rapid] draw cmd-0: "get"
+# 2026/08/31 03:38:12.416259 [TestLogStoreSnapshotFrom] [rapid] draw key-0: " "
+# 2026/08/31 03:38:12.416260 [TestLogStoreSnapshotFrom] [rapid] draw val-0: " "
+# 
+v0.4.8#16254908170606045397
+0x0
+0x0
+0x0
+0x1
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
