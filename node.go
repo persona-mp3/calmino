@@ -32,7 +32,9 @@ type Configuration struct {
 	Out       io.Writer
 }
 
-func NewNode(id, addr string,
+func NewNode(
+	id,
+	addr string,
 	peers []string,
 	logStore *LogStore,
 	raftState *RaftState,

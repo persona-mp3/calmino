@@ -35,5 +35,8 @@ func (rp RPCPeer) Close() error {
 	return rp.conn.Close()
 }
 func NewRPCPeer(id, addr string, conn *rpc.Client) RPCConn {
+	if conn == nil {
+		panic("cannot pass in nil conn to NewRPCPeer")
+	}
 	return RPCPeer{id: id, addr: addr, conn: conn}
 }
