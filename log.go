@@ -39,6 +39,8 @@ type LogStore interface {
 
 	// FlushTill applies all logs till stopIndex
 	FlushTill(stopIndex uint64) error
+
+	LogAt(targetIdx uint64) (Log, error)
 }
 
 type Logs struct {
@@ -123,4 +125,14 @@ func (l *Logs) CommitIndex() uint64 {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.commitIdx
+}
+
+func (l *Logs) LogAt(targetIndex uint64) (Log, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if targetIndex >= uint64(len(l.logs)) {
+		return Log{}, ErrIndexNotFound
+	}
+	return *l.logs[targetIndex], nil
 }

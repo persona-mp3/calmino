@@ -3,7 +3,8 @@ package main
 type RPCKind string
 
 const (
-	RPCKindSnapshot RPCKind = "Snapshot"
+	RPCKindSnapshot    RPCKind = "Snapshot"
+	RPCKindAppendEntry RPCKind = "AppendEntry"
 )
 
 type RPCReply struct {
@@ -31,4 +32,20 @@ type SnapshotReply struct {
 	Result      RaftResult
 	Snapshot    []Log
 	CommitIndex uint64
+}
+
+type AppendEntryRequest struct {
+	Id               NodeId
+	Term             uint64
+	Result           RaftResult
+	PreviousLogIndex uint64
+	PreviousLogTerm  uint64
+}
+
+type AppendEntryReply struct {
+	Id               NodeId
+	Term             uint64
+	Result           RaftResult
+	PreviousLogIndex uint64
+	PreviousLogTerm  uint64
 }

@@ -77,30 +77,30 @@ func NewNode(
 	}
 }
 
-func (n *Node) Run(parentCtx context.Context) error {
-	ctx, cancel := context.WithCancel(parentCtx)
-	defer cancel()
+func (n *Node) Start(mainCtx context.Context) error {
 	errCh := make(chan error)
 	go func() {
-		if err := n.server.Run(ctx, "tcp", n.listenAddr); err != nil {
+		if err := n.server.Run(mainCtx, "tcp", n.listenAddr); err != nil {
 			n.logger.Error("server failed with: ", slog.Any("err", err))
 			errCh <- err
 		}
 	}()
 
 	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case err := <-errCh:
-			return err
-		case payload := <-n.networkCh:
-			n.logger.Info("recvd payload", slog.Any("payload", payload))
+		if err := n.runFollower(mainCtx, errCh); err != nil {
+			return fmt.Errorf("runFollower: %w", err)
+		}
+		if err := n.runCandidate(mainCtx, errCh); err != nil {
+			return fmt.Errorf("runFollower: %w", err)
+		}
+		if err := n.runLeader(mainCtx, errCh); err != nil {
+			return fmt.Errorf("runleader: %w", err)
 		}
 	}
 }
 
 // Diagnositcs returns string represntation of the nodes current state
 func (n *Node) Diagnostics() string {
-	return fmt.Sprintf(`Node { id: %s, addr: %s,  peers: %+v, %s`, n.id, n.listenAddr, n.peers, n.raftState.String())
+	return fmt.Sprintf(`Node { id: %s, addr: %s,  peers: %+v, %s`,
+		n.id, n.listenAddr, n.peers, n.raftState.String())
 }

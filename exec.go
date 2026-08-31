@@ -59,7 +59,7 @@ func singleProcessCluster(rc *RawConfig) {
 	nodeWg := sync.WaitGroup{}
 	for _, node := range allNodes {
 		nodeWg.Go(func() {
-			if err := node.Run(ctx); err != nil {
+			if err := node.Start(ctx); err != nil {
 				log.Println("could not start node:", node.id, err)
 			}
 		})
