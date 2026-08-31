@@ -1,0 +1,17 @@
+addrs = ["localhost:4000", "localhost:4001", "localhost:4002"]
+# single_process runs all the nodes together as a single process
+# single_node runs only one node from operate.addr on a host machine
+mode = "single_process"  # options are single_process, single_node
+
+# log_level starts at -4 DEBUG, 0 INFO, 4 WARN, 8 ERROR
+log_level = -4
+
+# log_format is 0 which is text logging and 1 for json structured logging
+log_format = 0
+http_pprof_addr = "localhost:6061"
+persist = true
+
+[raft_config]
+heartbeat_interval = 800
+election_min = 1200
+election_max = 2200

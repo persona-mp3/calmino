@@ -1,8 +1,8 @@
 package main
 
 import (
+	db "calmino/database"
 	"errors"
-	db "jraft/database"
 	"sync"
 )
 
