@@ -6,9 +6,9 @@ type RPC struct{}
 
 type Server struct {
 	network chan RPC
-	log     *slog.Logger
+	logger  *slog.Logger
 }
 
-func NewServer(networkCh chan RPC) *Server {
+func NewServer(addr string, networkCh chan RPC) *Server {
 	return &Server{network: networkCh}
 }

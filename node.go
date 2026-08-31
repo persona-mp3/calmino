@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log/slog"
 	"sync"
@@ -11,6 +12,8 @@ type Node struct {
 	mu sync.Mutex
 	// id hold the current id of the node in the cluster
 	id string
+
+	listenAddr string
 
 	// peers holds the remote addresses of other peers in the cluster
 	peers []string
@@ -59,17 +62,18 @@ func NewNode(
 	}
 
 	networkCh := make(chan RPC)
-	server := NewServer(networkCh)
+	server := NewServer(addr, networkCh)
 
 	return &Node{
-		mu:        sync.Mutex{},
-		id:        id,
-		peers:     peers,
-		networkCh: networkCh,
-		server:    server,
-		raftState: raftState,
-		logStore:  logStore,
-		logger:    logger,
+		mu:         sync.Mutex{},
+		id:         id,
+		peers:      peers,
+		listenAddr: addr,
+		networkCh:  networkCh,
+		server:     server,
+		raftState:  raftState,
+		logStore:   logStore,
+		logger:     logger,
 	}
 }
 
@@ -78,5 +82,11 @@ func (n *Node) Run() error {
 	<-time.After(electionTimeout)
 	// TODO: startServer
 	n.logger.Info("node recvd no hearbeat, transition to candidate")
+	n.logger.Info(n.Diagnostics())
 	return nil
+}
+
+// Diagnositcs returns string represntation of the nodes current state
+func (n *Node) Diagnostics() string {
+	return fmt.Sprintf(`Node { id: %s, addr: %s,  peers: %+v, %s`, n.id, n.listenAddr, n.peers, n.raftState.String())
 }
