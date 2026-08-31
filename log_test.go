@@ -17,7 +17,7 @@ func TestNewLogStore(t *testing.T) {
 		uint64(0), "commit indexes don't match for initialized logStore")
 }
 
-func TestLogStorePreviousLogEntry(t *testing.T) {
+func TestLogStoreAppendAndPreviousLogEntry(t *testing.T) {
 	rapid.Check(t, func(rt *rapid.T) {
 		logSize := rapid.Uint64Range(0, 100).Draw(rt, "logSize")
 		logEntries := make([]*Log, logSize)
@@ -55,6 +55,53 @@ func TestLogStorePreviousLogEntry(t *testing.T) {
 			actualPrevLogEntry,
 			"prevLogEntry and actualPrevLogEntry do not match",
 		)
+
+	})
+}
+
+func TestLogStoreSnapshotFrom(t *testing.T) {
+	rapid.Check(t, func(rt *rapid.T) {
+		logSize := rapid.Uint64Range(0, 100).Draw(rt, "logSize")
+		logEntries := make([]*Log, logSize)
+
+		for i := range logSize {
+			logEntries[i] = &Log{
+				Index: i,
+				Term:  rapid.Uint64().Draw(rt, "logTerm"),
+				Data: db.KV{
+					Command: rapid.SampledFrom(
+						[]db.Command{db.CommandGet, db.CommandSet, db.CommandRemove},
+					).Draw(rt, fmt.Sprintf("cmd-%d", i)),
+					Key:   rapid.StringMatching(`[\x20-\x7E]+`).Draw(rt, fmt.Sprintf("key-%d", i)),
+					Value: rapid.StringMatching(`[\x20-\x7E]+`).Draw(rt, fmt.Sprintf("val-%d", i)),
+				},
+			}
+		}
+
+		logStore := NewLogStore()
+		for _, log := range logEntries {
+			logStore.Append(log)
+		}
+
+		uint64NumberGen := rapid.Uint64Range(0, 99)
+		startIdx := uint64NumberGen.Draw(rt, "startIdxForSnapshotFrom")
+		var expectedSnapshot []Log
+		var expectedErr error
+
+		clonedLogs := make([]Log, 0, logSize)
+		for _, log := range logEntries {
+			clonedLogs = append(clonedLogs, *log)
+		}
+		if startIdx > logSize {
+			expectedErr = ErrIndexNotFound
+			expectedSnapshot = clonedLogs
+		} else {
+			expectedSnapshot = clonedLogs[startIdx:]
+		}
+
+		actualSnapshot, actualErr := logStore.SnapshotFrom(startIdx)
+		assert.Equal(t, actualSnapshot, expectedSnapshot, "snapshots dont match")
+		assert.Equal(t, actualErr, expectedErr, "snapshots errors dont match")
 
 	})
 }

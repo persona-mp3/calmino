@@ -88,24 +88,41 @@ func (l *Logs) Apply() (uint64, error) {
 // SnapshotFrom returns all the logs starting from startIndex. If not found,
 // returns all logs
 func (l *Logs) SnapshotFrom(startIdx uint64) ([]Log, error) {
+	// l.mu.Lock()
+	// defer l.mu.Unlock()
+	// logSize := len(l.logs)
+	// if startIdx > uint64(logSize) {
+	// 	clonedLogs := make([]Log, 0, logSize)
+	// 	for _, log := range l.logs {
+	// 		// clone := *log
+	// 		clonedLogs = append(clonedLogs, *log)
+	// 	}
+	// 	return clonedLogs, ErrIndexNotFound
+	// }
+	//
+	// clonedLogs := make([]Log, 0, uint64(logSize)-startIdx)
+	// for _, log := range l.logs[startIdx:] {
+	// 	// clone := *log
+	// 	clonedLogs = append(clonedLogs, *log)
+	// }
+	// return clonedLogs, nil
+
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	logSize := len(l.logs)
 	if startIdx > uint64(logSize) {
-		clonedLogs := make([]Log, logSize)
+		clonedLogs := make([]Log, 0, logSize)
 		for _, log := range l.logs {
-			clone := *log
-			clonedLogs = append(clonedLogs, clone)
+			clonedLogs = append(clonedLogs, *log)
 		}
 		return clonedLogs, ErrIndexNotFound
 	}
-
-	clonedLogs := make([]Log, logSize)
+	clonedLogs := make([]Log, 0, logSize-int(startIdx))
 	for _, log := range l.logs[startIdx:] {
-		clone := *log
-		clonedLogs = append(clonedLogs, clone)
+		clonedLogs = append(clonedLogs, *log)
 	}
 	return clonedLogs, nil
+
 }
 
 // Append takes appends a new log into the store log entries. It returns the
