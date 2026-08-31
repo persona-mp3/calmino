@@ -27,9 +27,11 @@ func TestLogStorePreviousLogEntry(t *testing.T) {
 				Index: i,
 				Term:  rapid.Uint64().Draw(rt, "logTerm"),
 				Data: db.KV{
-					Command: rapid.SampledFrom([]db.Command{db.CommandGet, db.CommandSet, db.CommandRemove}).Draw(rt, fmt.Sprintf("cmd-%d", i)),
-					Key:     rapid.StringMatching(`[\x20-\x7E]+`).Draw(rt, fmt.Sprintf("key-%d", i)),
-					Value:   rapid.StringMatching(`[\x20-\x7E]+`).Draw(rt, fmt.Sprintf("val-%d", i)),
+					Command: rapid.SampledFrom(
+						[]db.Command{db.CommandGet, db.CommandSet, db.CommandRemove},
+					).Draw(rt, fmt.Sprintf("cmd-%d", i)),
+					Key:   rapid.StringMatching(`[\x20-\x7E]+`).Draw(rt, fmt.Sprintf("key-%d", i)),
+					Value: rapid.StringMatching(`[\x20-\x7E]+`).Draw(rt, fmt.Sprintf("val-%d", i)),
 				},
 			}
 		}
