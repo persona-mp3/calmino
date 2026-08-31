@@ -23,16 +23,20 @@ func randomDuration(d time.Duration) time.Duration {
 	return d * time.Duration(actualInterval)
 }
 
-func buildExclusionMap(items []string) map[string][]string {
-	result := make(map[string][]string, len(items))
+func buildIndexedPeerMap(items []string) map[int]map[string][]string {
+	result := make(map[int]map[string][]string, len(items))
 
 	for i, currentItem := range items {
+		// 1. Allocate exact space for the peer strings
 		others := make([]string, 0, len(items)-1)
+		others = append(others, items[:i]...)
+		others = append(others, items[i+1:]...)
 
-		others = append(others, items[:i]...)   // Grab everything before the item
-		others = append(others, items[i+1:]...) // Grab everything after the item
+		// 2. Initialize the inner map for this specific index (id)
+		result[i] = make(map[string][]string, 1)
 
-		result[currentItem] = others
+		// 3. Assign the item and its peers
+		result[i][currentItem] = others
 	}
 
 	return result

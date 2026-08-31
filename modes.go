@@ -12,13 +12,12 @@ func RunCluster(rc *RawConfig) error {
 
 func singleProcessCluster(rc *RawConfig) {
 	// 1. extract peers and addresses, possibly a map[id][]string{}
-	idPeers := buildExclusionMap(rc.Addrs)
-	idx := 1
-	for addr, peers := range idPeers {
-		fmt.Printf("(%d) %s ->  %+v\n", idx, addr, peers)
-		idx++
+	idPeers := buildIndexedPeerMap(rc.Addrs)
+	for idx, info := range idPeers {
+		for addr, peer := range info {
+			fmt.Printf("(%d) %s ->  %v\n", idx, addr, peer)
+		}
 	}
-
 	// CURRENTLY: 2. Basically create new nodes, but also create their configs
 
 }
