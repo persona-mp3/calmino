@@ -8,7 +8,9 @@ import (
 	"math/big"
 	"net/http"
 	_ "net/http/pprof"
+	"net/rpc"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -60,4 +62,18 @@ func startPprofServer(addr string) error {
 		return fmt.Errorf("failed to start pprof-server: %w", err)
 	}
 	return nil
+}
+
+func connectToPeers(network string, addrs []string) []*RPCPeer {
+	rpcPeers := []*RPCPeer{}
+	for idx, addr := range addrs {
+		conn, err := rpc.Dial(network, addr)
+		if err != nil {
+			log.Printf("[err] could not dial %s. reason: %s\n", addr, err)
+			continue
+		}
+		id := strconv.Itoa(idx)
+		rpcPeers = append(rpcPeers, &RPCPeer{id: id, addr: addr, conn: conn})
+	}
+	return rpcPeers
 }

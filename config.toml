@@ -11,7 +11,7 @@ log_format = 0
 http_pprof_addr = "localhost:6061"
 
 # persist writes logs to file
-persist = false
+persist = true
 
 [raft_config]
 heartbeat_interval = 800

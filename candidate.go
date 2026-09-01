@@ -29,6 +29,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"log/slog"
+	"sync/atomic"
 )
 
 func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) error {
@@ -49,11 +52,11 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 	n.logger.Info("candidate state started successfully")
 	_ = childCtx
 
-	// TASK 1. Connect to all peers
-	// TASK 2. Send a VoteRPC to all of them
+	// TASK 3: Write handlers for candidate
+	// TASK 4. Impl the VoteRPC Method
 
-	peers := connectToPeers(n.peers)
-	if len(peers) == 0 {
+	rpcPeers := connectToPeers("tcp", n.peers)
+	if len(rpcPeers) == 0 {
 		n.raftState.UpdateState(StateFollower)
 		n.logger.Error("could not connect to any peers while a candidate")
 		return nil
@@ -86,14 +89,13 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 		PreviousLogTerm:  previousLogEntry.Term,
 	}
 
-	go collectOtherVotes(timeoutCtx, req, peers, wonElection)
+	n.logger.Info("parading for", slog.Uint64("term", currentTerm))
+	go collectOtherVotes(timeoutCtx, req, len(n.peers), rpcPeers, wonElection)
 
 	for {
 		select {
 		case <-mainCtx.Done():
 			return mainCtx.Err()
-		case <-timeoutCtx.Done():
-			panic("election ctx has been reached")
 		case err := <-serverErrCh:
 			return err
 		case result := <-wonElection:
@@ -104,6 +106,7 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 				n.logger.Info("candidate lost election for new term going back to follower")
 				n.raftState.UpdateState(StateFollower)
 			}
+			return nil
 		case payload := <-n.networkCh:
 			// if we recv an appendEntry from a higher term
 			_ = payload
@@ -112,16 +115,52 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 	}
 }
 
-func connectToPeers(addrs []string) []*RPCPeer {
-	panic("connectToPeers not yet implemented")
-}
-
 func collectOtherVotes(
 	timeoutCtx context.Context,
 	req VoteRequest,
+	clusterSize int,
 	peers []*RPCPeer,
 	won chan bool,
 ) {
-	// spawn goroutines that collect the votes
-	panic("vote collection not yet implemented")
+	collectedVotes := atomic.Uint64{}
+	collectedVotes.Add(1)
+	newVote := make(chan struct{}, len(peers)*2)
+	majorityVote := (clusterSize / 2) + 1
+
+	for _, peer := range peers {
+		go func(peer *RPCPeer, voteCh chan struct{}) {
+			reply := VoteReply{}
+			if err := peer.Call("Server.VoteRPC", req, &reply); err != nil {
+				log.Println("[error] failed to call VoteRPC", err)
+				return
+			}
+
+			if reply.Result != VoteResultVoteGranted {
+				log.Println("[warn] vote request was not granted", reply)
+				return
+			}
+			voteCh <- struct{}{}
+			log.Println("[debug] sent vote to channel", reply)
+		}(peer, newVote)
+	}
+
+	for {
+		if collectedVotes.Load() >= uint64(majorityVote) {
+			won <- true
+			return
+		} else if timeoutErr := timeoutCtx.Err(); timeoutErr != nil {
+			log.Println("[debug] timeoutCtx done:", timeoutErr)
+			break
+		}
+
+		select {
+		case <-newVote:
+			collectedVotes.Add(1)
+		case <-timeoutCtx.Done():
+			log.Println("[debug] timeoutCtx fired")
+		}
+	}
+
+	electionWon := collectedVotes.Load() >= uint64(majorityVote)
+	won <- electionWon
 }
