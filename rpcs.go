@@ -49,3 +49,25 @@ type AppendEntryReply struct {
 	PreviousLogIndex uint64
 	PreviousLogTerm  uint64
 }
+
+// VoteRequest should have a Result of RaftResultVoteRequest
+type VoteRequest struct {
+	Id               NodeId
+	Term             uint64
+	Result           VoteResult
+	Message          string
+	PreviousLogIndex uint64
+	PreviousLogTerm  uint64
+}
+
+// VoteReply should have a Result of RaftResultVoteGranted or RaftResultVoteDenied
+// and then a more detailed reason inside message like a string. Or maybe we could
+// just set Result to be []RaftResult? or add extend it to have a Reasons field?
+type VoteReply struct {
+	Id               NodeId
+	Term             uint64
+	Result           VoteResult
+	Message          string
+	PreviousLogIndex uint64
+	PreviousLogTerm  uint64
+}

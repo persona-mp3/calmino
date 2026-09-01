@@ -48,7 +48,7 @@ func singleProcessCluster(rc *RawConfig) {
 				log.Panic("error creating config:", err)
 			}
 			config.Out = out
-			node := NewNode(id, addr, peers, &logStore, raftState, *config)
+			node := NewNode(id, addr, peers, logStore, raftState, *config)
 			allNodes = append(allNodes, node)
 		}
 	}

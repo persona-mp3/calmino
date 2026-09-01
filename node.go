@@ -26,7 +26,7 @@ type Node struct {
 
 	server    *Server
 	raftState *RaftState
-	logStore  *LogStore
+	logStore  LogStore
 
 	logger        *slog.Logger
 	configuration Configuration
@@ -43,7 +43,7 @@ func NewNode(
 	id,
 	addr string,
 	peers []string,
-	logStore *LogStore,
+	logStore LogStore,
 	raftState *RaftState,
 	config Configuration,
 ) *Node {

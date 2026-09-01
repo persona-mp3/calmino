@@ -29,6 +29,14 @@ const (
 	RaftResultSnapshot RaftResult = "RaftResultSnapshot"
 )
 
+type VoteResult string
+
+const (
+	VoteResultVoteRequest VoteResult = "VoteResultVoteRequest"
+	VoteResultVoteDenied  VoteResult = "VoteResultVoteDenied"
+	VoteResultVoteGranted VoteResult = "VoteResultVoteGranted"
+)
+
 type LogStatus int
 
 const (

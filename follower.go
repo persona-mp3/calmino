@@ -27,7 +27,7 @@ func (n *Node) runFollower(mainCtx context.Context, serverErrCh chan error) erro
 
 	ticker := time.NewTicker(electionTimeout)
 
-	fh := NewFollowerHandler(n.id, n.raftState, *n.logStore, n.logger)
+	fh := NewFollowerHandler(n.id, n.raftState, n.logStore, n.logger)
 
 	for {
 		select {
