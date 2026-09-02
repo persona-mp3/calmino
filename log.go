@@ -17,7 +17,7 @@ type Log struct {
 	Data  db.KV
 }
 
-// LogStore is used to provide an interface for storing and retreiving logs
+// LogStore is used to provide an interface for storing and retrieving logs
 type LogStore interface {
 	// PreviousLogEntry returns the second-to-last log. Returns an empty log
 	// if there are no more than 2 logs
@@ -27,7 +27,7 @@ type LogStore interface {
 	// returns all logs
 	SnapshotFrom(startIndex uint64) ([]Log, error)
 
-	// Apppend stores a log entry
+	// Append stores a log entry
 	Append(log *Log) uint64
 
 	// Commited returns the index that has be written to the database
