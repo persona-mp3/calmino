@@ -87,14 +87,20 @@ func (n *Node) Start(mainCtx context.Context) error {
 	}()
 
 	for {
-		if err := n.runFollower(mainCtx, errCh); err != nil {
-			return fmt.Errorf("runFollower: %w", err)
-		}
-		if err := n.runCandidate(mainCtx, errCh); err != nil {
-			return fmt.Errorf("runFollower: %w", err)
-		}
-		if err := n.runLeader(mainCtx, errCh); err != nil {
-			return fmt.Errorf("runleader: %w", err)
+		switch n.raftState.State() {
+		case StateFollower:
+			if err := n.runFollower(mainCtx, errCh); err != nil {
+				return fmt.Errorf("runFollower err: %w", err)
+			}
+		case StateCandidate:
+			if err := n.runCandidate(mainCtx, errCh); err != nil {
+				return fmt.Errorf("runCandidate err: %w", err)
+			}
+		case StateLeader:
+			if err := n.runLeader(mainCtx, errCh); err != nil {
+				return fmt.Errorf("runLeader err: %w", err)
+			}
+
 		}
 	}
 }
