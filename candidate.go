@@ -35,7 +35,8 @@ import (
 )
 
 func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) error {
-	currentTerm := n.raftState.IncrementTerm()
+
+	newTerm := n.raftState.IncrementTerm()
 	electionTimeout := n.raftState.NewElectionTimeout()
 
 	childCtx, cancel := context.WithCancel(mainCtx)
@@ -44,12 +45,9 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 		n.logger.Info("candidate mode exiting")
 	}()
 
-	currentState := n.raftState.State()
-	if currentState != StateCandidate {
-		return nil
-	}
-
-	n.logger.Info("candidate state started successfully")
+	n.logger.Info("candidate state started successfully for election",
+		slog.Any("newTerm", newTerm),
+	)
 	_ = childCtx
 
 	// TASK 3: Write handlers for candidate
@@ -62,20 +60,24 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 		return nil
 	}
 
-	if candidate, granted := n.raftState.HasVotedFor(currentTerm); granted {
+	if candidate, granted := n.raftState.HasVotedFor(newTerm); granted {
 		panicMsg := fmt.Sprintf(
-			`already granted vote for currentTerm: %d while in Candidate state
-       Candidate is supposed to start election and vote for a higher/new term
-       ---
-       GrantedTo: %s,
-       Raft diagnostics:
-       %s
-      `, currentTerm, candidate, n.raftState.String())
+			` 
+			already granted vote for newTerm: %d while in Candidate state
+	    Candidate is supposed to start election and vote for a higher/new term
+	    -------------------
+			Granted: %t
+	    ToCandidate: %s,
+			-------------------
+	    RaftState:
+			-------------------
+	      %s
+	     `, newTerm, granted, candidate, n.raftState.String())
 
 		panic(panicMsg)
 	}
 
-	n.raftState.GrantVoteTo(currentTerm, NodeId(n.id))
+	n.raftState.GrantVoteTo(newTerm, NodeId(n.id))
 	timeoutCtx, cancel := context.WithTimeout(mainCtx, electionTimeout)
 	defer cancel()
 
@@ -83,13 +85,13 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 	previousLogEntry := n.logStore.PreviousEntry()
 	req := VoteRequest{
 		Id:               NodeId(n.id),
-		Term:             currentTerm,
+		Term:             newTerm,
 		Result:           VoteResultVoteRequest,
 		PreviousLogIndex: previousLogEntry.Index,
 		PreviousLogTerm:  previousLogEntry.Term,
 	}
 
-	n.logger.Info("parading for", slog.Uint64("term", currentTerm))
+	n.logger.Info("parading for", slog.Uint64("term", newTerm))
 	go collectOtherVotes(timeoutCtx, req, len(n.peers), rpcPeers, wonElection)
 	handler := NewCandidateHandler(NodeId(n.id), n.logger)
 
@@ -125,25 +127,26 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 					n.logger.Info("dropping down to follower from candidate")
 					return nil
 				}
-				response = RPCReply{kind: RPCKindAppendEntry, payload: reply}
+				response = RPCReply{kind: RPCKindAppendEntry, payload: &reply}
 			case VoteRequest:
 				reply, err := handler.Vote(&req, n.raftState, n.logStore)
 				if err != nil {
 					panic(err)
 				}
-				response = RPCReply{kind: RPCKindVote, payload: reply}
+				response = RPCReply{kind: RPCKindVote, payload: &reply}
 				if reply.Result == VoteResultVoteGranted {
 					payload.reply <- response
 					n.logger.Info("dropping down to follower from candidate")
 					return nil
 				}
+				payload.reply <- response
 
 			case SnapshotRequest:
 				reply, err := handler.Snapshot(&req, n.raftState, n.logStore)
 				if err != nil {
 					panic(err)
 				}
-				response = RPCReply{kind: RPCKindSnapshot, payload: reply}
+				response = RPCReply{kind: RPCKindSnapshot, payload: &reply}
 			default:
 				panicMsg := fmt.Sprintf(
 					"recvd unsupported or unimplemented payload as candidate:\n%+v\n", req,
@@ -151,7 +154,7 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 				panic(panicMsg)
 
 			}
-			payload.reply <- response
+			// payload.reply <- response
 
 		}
 	}
@@ -203,11 +206,10 @@ func collectOtherVotes(
 			}
 
 			if reply.Result != VoteResultVoteGranted {
-				log.Println("[warn] vote request was not granted", reply)
+				log.Printf("[warn] vote request was not granted. reason: %+v\n", reply)
 				return
 			}
 			voteCh <- struct{}{}
-			log.Println("[debug] sent vote to channel", reply)
 		}(peer, newVote)
 	}
 
@@ -216,7 +218,6 @@ func collectOtherVotes(
 			won <- true
 			return
 		} else if timeoutErr := timeoutCtx.Err(); timeoutErr != nil {
-			log.Println("[debug] timeoutCtx done:", timeoutErr)
 			break
 		}
 
@@ -224,7 +225,6 @@ func collectOtherVotes(
 		case <-newVote:
 			collectedVotes.Add(1)
 		case <-timeoutCtx.Done():
-			log.Println("[debug] timeoutCtx fired")
 		}
 	}
 

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"time"
 )
@@ -37,9 +38,13 @@ func (n *Node) runFollower(mainCtx context.Context, serverErrCh chan error) erro
 			return err
 		case payload := <-n.networkCh:
 			n.logger.Info("recvd payload", slog.Any("payload", payload))
-			reply, raftResult := fh.routePayload(payload)
-			payload.reply <- reply
-			n.logger.Info("payload sent to client: ", slog.Any("payload", reply))
+			rpcReply, raftResult := fh.routePayload(payload)
+
+			payload.reply <- rpcReply
+			fmt.Println()
+			fmt.Println("[debug] reply-sent")
+
+			// n.logger.Info("payload sent to client: ", slog.Any("payload", reply))
 			if raftResult == RaftResultAcked || raftResult == RaftResultLogsOutOfSync {
 				ticker.Reset(electionTimeout)
 			}
@@ -160,7 +165,6 @@ func verifyLeader(req *AppendEntryRequest, raftState *RaftState) RaftResult {
 }
 
 func (fh *followerHandler) handleVoteRequest(req *VoteRequest) (RPCReply, RaftResult) {
-	println("paniced here")
 	currentTerm := fh.raftState.CurrentTerm()
 	prevLog := fh.logStore.PreviousEntry()
 	if req.Term <= currentTerm {
@@ -194,6 +198,7 @@ func (fh *followerHandler) handleVoteRequest(req *VoteRequest) (RPCReply, RaftRe
 	}
 
 	fh.raftState.GrantVoteTo(req.Term, req.Id)
+	log.Printf("[debug] follower granted vote for: %d, to: %s\n", req.Term, req.Id)
 	fh.raftState.UpdateTerm(req.Term, req.Id)
 	fh.logger.Info("granted vote to candidate and updated raftState",
 		slog.Uint64("previousTerm", currentTerm),

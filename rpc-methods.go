@@ -1,6 +1,9 @@
 package main
 
-import "log/slog"
+import (
+	"fmt"
+	"log/slog"
+)
 
 func (s *Server) SnapshotRPC(req SnapshotRequest, reply *SnapshotReply) error {
 	res := make(chan RPCReply, 1)
@@ -30,13 +33,12 @@ func (s *Server) VoteRPC(req VoteRequest, reply *VoteReply) error {
 	data := <-res
 	switch data := data.payload.(type) {
 	case *VoteReply:
-		reply = data
+		*reply = *data
 	default:
 		s.logger.Error(
-			"invalid payload from node expected Vote", slog.Any("got", data),
-		)
-
-		panic("invalid payload recvd")
+			"invalid payload from node expected Vote", slog.Any("got", data))
+		panicMsg := fmt.Sprintf("invalid payload recvd, expected *Vote, got:: %T", data)
+		panic(panicMsg)
 	}
 
 	return nil

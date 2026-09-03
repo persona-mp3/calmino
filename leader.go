@@ -25,6 +25,7 @@ func (n *Node) runLeader(mainCtx context.Context, serverErrCh chan error) error 
 			return err
 		case payload := <-n.networkCh:
 			n.logger.Info("recvd payload", slog.Any("payload", payload))
+			panic("leader recvd request and handler not yet implmented")
 		}
 	}
 }

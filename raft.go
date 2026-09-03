@@ -50,9 +50,10 @@ func NewRaftState(initialTimeout time.Duration) *RaftState {
 // IncrementTerm increments the term for this node and returns the new term
 func (rs *RaftState) IncrementTerm() uint64 {
 	rs.mu.Lock()
-	defer rs.mu.Unlock()
-	rs.term++
-	return rs.term
+	rs.term += 1
+	newTerm := rs.term
+	rs.mu.Unlock()
+	return newTerm
 }
 
 // CurrentTerm returns the current term
@@ -69,11 +70,13 @@ func (rs *RaftState) UpdateTerm(term uint64, leader NodeId) {
 	rs.leader = leader
 }
 
-// GrantVoteTo grants the term and vote to a candidate
-func (rs *RaftState) GrantVoteTo(term uint64, candidateId NodeId) {
+// GrantVoteTo grants the term and vote to a candidate. It also updates the
+// current term and with the new term
+func (rs *RaftState) GrantVoteTo(newTerm uint64, candidateId NodeId) {
 	rs.mu.Lock()
 	defer rs.mu.Unlock()
-	rs.votedFor[term] = candidateId
+	rs.votedFor[newTerm] = candidateId
+	rs.term = newTerm
 }
 
 // CurrentLeader returns the current leader for this term
@@ -107,8 +110,8 @@ func (rs *RaftState) VoteHistory() map[uint64]NodeId {
 // for this term has been found
 func (rs *RaftState) HasVotedFor(term uint64) (NodeId, bool) {
 	rs.mu.Lock()
-	defer rs.mu.Unlock()
 	nodeId, ok := rs.votedFor[term]
+	rs.mu.Unlock()
 	return nodeId, ok
 }
 
