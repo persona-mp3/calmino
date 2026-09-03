@@ -5,6 +5,7 @@ type RPCKind string
 const (
 	RPCKindSnapshot    RPCKind = "Snapshot"
 	RPCKindAppendEntry RPCKind = "AppendEntry"
+	RPCKindVote        RPCKind = "Vote"
 )
 
 type RPCReply struct {

@@ -27,7 +27,7 @@ func (n *Node) runFollower(mainCtx context.Context, serverErrCh chan error) erro
 
 	ticker := time.NewTicker(electionTimeout)
 
-	fh := NewFollowerHandler(n.id, n.raftState, n.logStore, n.logger)
+	fh := NewFollowerHandler(NodeId(n.id), n.raftState, n.logStore, n.logger)
 
 	for {
 		select {
@@ -54,14 +54,19 @@ func (n *Node) runFollower(mainCtx context.Context, serverErrCh chan error) erro
 }
 
 type followerHandler struct {
-	id        string
+	id        NodeId
 	raftState *RaftState
 	logStore  LogStore
 	logger    *slog.Logger
 }
 
-func NewFollowerHandler(id string, raftState *RaftState, logStore LogStore, logger *slog.Logger) followerHandler {
-	return followerHandler{}
+func NewFollowerHandler(id NodeId, raftState *RaftState, logStore LogStore, logger *slog.Logger) followerHandler {
+	return followerHandler{
+		id:        id,
+		raftState: raftState,
+		logStore:  logStore,
+		logger:    logger,
+	}
 }
 
 func (fh followerHandler) routePayload(payload RPCPayload) (RPCReply, RaftResult) {
@@ -70,6 +75,8 @@ func (fh followerHandler) routePayload(payload RPCPayload) (RPCReply, RaftResult
 		return fh.handleAppendEntryRequest(&req)
 	case SnapshotRequest:
 		return fh.handleSnapshotRequest(&req)
+	case VoteRequest:
+		return fh.handleVoteRequest(&req)
 	default:
 		panicMsg := fmt.Sprintf("follower has not yet implemented req %v", req)
 		panic(panicMsg)
@@ -150,4 +157,56 @@ func verifyLeader(req *AppendEntryRequest, raftState *RaftState) RaftResult {
 	default:
 		return RaftResultRejectedLeader
 	}
+}
+
+func (fh *followerHandler) handleVoteRequest(req *VoteRequest) (RPCReply, RaftResult) {
+	println("paniced here")
+	currentTerm := fh.raftState.CurrentTerm()
+	prevLog := fh.logStore.PreviousEntry()
+	if req.Term <= currentTerm {
+		fh.logger.Info("recvd vote request from lower or equal term",
+			slog.Uint64("reqTerm", req.Term),
+			slog.Uint64("currentTerm", currentTerm),
+		)
+		return RPCReply{kind: RPCKindVote, payload: &VoteReply{
+			Id:               NodeId(fh.id),
+			Term:             currentTerm,
+			Message:          "cannot request vote for current or lower term",
+			Result:           VoteResultVoteDenied,
+			PreviousLogIndex: prevLog.Index,
+			PreviousLogTerm:  prevLog.Term,
+		}}, RaftResultVoteDenied
+	}
+	_, voted := fh.raftState.HasVotedFor(req.Term)
+	if voted {
+		fh.logger.Info("recvd vote request for term already voted",
+			slog.Uint64("termVoted", req.Term),
+			slog.Uint64("currentTerm", currentTerm),
+		)
+		return RPCReply{kind: RPCKindVote, payload: &VoteReply{
+			Id:               NodeId(fh.id),
+			Term:             currentTerm,
+			Message:          "already voted for term",
+			Result:           VoteResultVoteDenied,
+			PreviousLogIndex: prevLog.Index,
+			PreviousLogTerm:  prevLog.Term,
+		}}, RaftResultVoteDenied
+	}
+
+	fh.raftState.GrantVoteTo(req.Term, req.Id)
+	fh.raftState.UpdateTerm(req.Term, req.Id)
+	fh.logger.Info("granted vote to candidate and updated raftState",
+		slog.Uint64("previousTerm", currentTerm),
+		slog.Any("voteReq", req),
+	)
+
+	return RPCReply{kind: RPCKindVote, payload: &VoteReply{
+		Id:               NodeId(fh.id),
+		Term:             req.Term,
+		Message:          "higher term",
+		Result:           VoteResultVoteGranted,
+		PreviousLogIndex: prevLog.Index,
+		PreviousLogTerm:  prevLog.Term,
+	}}, RaftResultAcked
+
 }

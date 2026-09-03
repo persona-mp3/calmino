@@ -26,7 +26,8 @@ const (
 	// RaftResultUnknownUnhandled accounts for situations that are unexpected or unhandled
 	RaftResultUnknownUnhandled RaftResult = "RaftResultUnknownUnhandled"
 
-	RaftResultSnapshot RaftResult = "RaftResultSnapshot"
+	RaftResultSnapshot   RaftResult = "RaftResultSnapshot"
+	RaftResultVoteDenied RaftResult = "RaftResultVoteDenied"
 )
 
 type VoteResult string

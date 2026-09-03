@@ -91,6 +91,7 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 
 	n.logger.Info("parading for", slog.Uint64("term", currentTerm))
 	go collectOtherVotes(timeoutCtx, req, len(n.peers), rpcPeers, wonElection)
+	handler := NewCandidateHandler(NodeId(n.id), n.logger)
 
 	for {
 		select {
@@ -110,8 +111,74 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 		case payload := <-n.networkCh:
 			// if we recv an appendEntry from a higher term
 			_ = payload
-			panic("candidate does not have handlers for payloads yet")
+			var response RPCReply
+
+			switch req := payload.payload.(type) {
+			case AppendEntryRequest:
+				reply, err := handler.AppendEntry(&req, n.raftState, n.logStore)
+				if err != nil {
+					panic(err)
+				}
+				if reply.Result == RaftResultAcked {
+					n.raftState.UpdateState(StateFollower)
+					payload.reply <- response
+					n.logger.Info("dropping down to follower from candidate")
+					return nil
+				}
+				response = RPCReply{kind: RPCKindAppendEntry, payload: reply}
+			case VoteRequest:
+				reply, err := handler.Vote(&req, n.raftState, n.logStore)
+				if err != nil {
+					panic(err)
+				}
+				response = RPCReply{kind: RPCKindVote, payload: reply}
+				if reply.Result == VoteResultVoteGranted {
+					payload.reply <- response
+					n.logger.Info("dropping down to follower from candidate")
+					return nil
+				}
+
+			case SnapshotRequest:
+				reply, err := handler.Snapshot(&req, n.raftState, n.logStore)
+				if err != nil {
+					panic(err)
+				}
+				response = RPCReply{kind: RPCKindSnapshot, payload: reply}
+			default:
+				panicMsg := fmt.Sprintf(
+					"recvd unsupported or unimplemented payload as candidate:\n%+v\n", req,
+				)
+				panic(panicMsg)
+
+			}
+			payload.reply <- response
+
 		}
+	}
+}
+
+func routePayload(
+	payload RPCPayload,
+	raftState *RaftState,
+	logStore LogStore,
+	handler Handler,
+) (RPCReply, error) {
+
+	switch req := payload.payload.(type) {
+	case AppendEntryRequest:
+		reply, err := handler.AppendEntry(&req, raftState, logStore)
+		return RPCReply{kind: RPCKindAppendEntry, payload: reply}, err
+	case VoteRequest:
+		reply, err := handler.Vote(&req, raftState, logStore)
+		return RPCReply{kind: RPCKindVote, payload: reply}, err
+	case SnapshotRequest:
+		reply, err := handler.Snapshot(&req, raftState, logStore)
+		return RPCReply{kind: RPCKindSnapshot, payload: reply}, err
+	default:
+		panicMsg := fmt.Sprintf(
+			"recvd unsupported or unimplemented payload as candidate:\n%+v\n", req,
+		)
+		panic(panicMsg)
 	}
 }
 
