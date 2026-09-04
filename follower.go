@@ -240,25 +240,6 @@ func (fh *followerHandler) handleVoteRequest(req *VoteRequest) (RPCReply, RaftRe
 
 }
 
-func logsUpToDate(prevLogEntry Log, reqTerm, reqIndex uint64) bool {
-	logTerm := prevLogEntry.Term
-	logIndex := prevLogEntry.Index
-
-	switch {
-	case logTerm == reqTerm:
-		if logIndex > reqIndex {
-			return false
-		} else {
-			return true
-		}
-	case logTerm > reqTerm:
-		return false
-	case logTerm < reqTerm:
-		return true
-	}
-	return true
-}
-
 func logCompletion(prevLogEntry Log, reqIndex, reqTerm uint64) bool {
 	term := prevLogEntry.Term
 	index := prevLogEntry.Index
