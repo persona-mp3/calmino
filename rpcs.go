@@ -55,7 +55,6 @@ type AppendEntryReply struct {
 type VoteRequest struct {
 	Id               NodeId
 	Term             uint64
-	Result           VoteResult
 	Message          string
 	PreviousLogIndex uint64
 	PreviousLogTerm  uint64
@@ -67,7 +66,7 @@ type VoteRequest struct {
 type VoteReply struct {
 	Id               NodeId
 	Term             uint64
-	Result           VoteResult
+	Result           RaftResult
 	Message          string
 	PreviousLogIndex uint64
 	PreviousLogTerm  uint64

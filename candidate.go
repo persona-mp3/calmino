@@ -86,7 +86,6 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 	req := VoteRequest{
 		Id:               NodeId(n.id),
 		Term:             newTerm,
-		Result:           VoteResultVoteRequest,
 		PreviousLogIndex: previousLogEntry.Index,
 		PreviousLogTerm:  previousLogEntry.Term,
 	}
@@ -134,7 +133,7 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 					panic(err)
 				}
 				response = RPCReply{kind: RPCKindVote, payload: &reply}
-				if reply.Result == VoteResultVoteGranted {
+				if reply.Result == RaftResultVoteGranted {
 					payload.reply <- response
 					n.logger.Info("dropping down to follower from candidate")
 					return nil
@@ -205,7 +204,7 @@ func collectOtherVotes(
 				return
 			}
 
-			if reply.Result != VoteResultVoteGranted {
+			if reply.Result != RaftResultVoteGranted {
 				log.Printf("[warn] vote request was not granted. reason: %+v\n", reply)
 				return
 			}

@@ -22,7 +22,10 @@ type Handler interface {
 	) (SnapshotReply, error)
 }
 
-type leaderHandler struct{}
+type leaderHandler struct {
+	id     NodeId
+	logger *slog.Logger
+}
 
 type candidateHandler struct {
 	id     NodeId
@@ -78,11 +81,12 @@ func (ch *candidateHandler) Vote(
 ) (VoteReply, error) {
 	currentTerm := raftState.CurrentTerm()
 	prevLogEntry := logStore.PreviousEntry()
+	/// TODO: Impl log checking
 	if req.Term <= currentTerm {
 		return VoteReply{
 			Id:               ch.id,
 			Term:             currentTerm,
-			Result:           VoteResultVoteDenied,
+			Result:           RaftResultVoteDenied,
 			PreviousLogIndex: prevLogEntry.Index,
 			PreviousLogTerm:  prevLogEntry.Term,
 		}, nil
@@ -97,7 +101,7 @@ func (ch *candidateHandler) Vote(
 	return VoteReply{
 		Id:               ch.id,
 		Term:             req.Term,
-		Result:           VoteResultVoteGranted,
+		Result:           RaftResultVoteGranted,
 		PreviousLogIndex: prevLogEntry.Index,
 		PreviousLogTerm:  prevLogEntry.Term,
 	}, nil

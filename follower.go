@@ -176,7 +176,7 @@ func (fh *followerHandler) handleVoteRequest(req *VoteRequest) (RPCReply, RaftRe
 			Id:               NodeId(fh.id),
 			Term:             currentTerm,
 			Message:          "cannot request vote for current or lower term",
-			Result:           VoteResultVoteDenied,
+			Result:           RaftResultVoteDenied,
 			PreviousLogIndex: prevLog.Index,
 			PreviousLogTerm:  prevLog.Term,
 		}}, RaftResultVoteDenied
@@ -191,7 +191,7 @@ func (fh *followerHandler) handleVoteRequest(req *VoteRequest) (RPCReply, RaftRe
 			Id:               NodeId(fh.id),
 			Term:             currentTerm,
 			Message:          "already voted for term",
-			Result:           VoteResultVoteDenied,
+			Result:           RaftResultVoteDenied,
 			PreviousLogIndex: prevLog.Index,
 			PreviousLogTerm:  prevLog.Term,
 		}}, RaftResultVoteDenied
@@ -209,7 +209,7 @@ func (fh *followerHandler) handleVoteRequest(req *VoteRequest) (RPCReply, RaftRe
 		Id:               NodeId(fh.id),
 		Term:             req.Term,
 		Message:          "higher term",
-		Result:           VoteResultVoteGranted,
+		Result:           RaftResultVoteGranted,
 		PreviousLogIndex: prevLog.Index,
 		PreviousLogTerm:  prevLog.Term,
 	}}, RaftResultAcked

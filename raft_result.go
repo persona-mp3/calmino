@@ -8,12 +8,12 @@ const (
 	// RaftResultAcked s sent when the Follower successfully acknowledges the Leader
 	RaftResultAcked RaftResult = "RaftResultAcked"
 
+	// RaftResultLowerTerm means the Sender was rejected because they had a lower term
+	RaftResultLowerTerm RaftResult = "RaftResultLowerTerm"
+
 	// RaftResultStaleLeader is sent when the Follower refuses to acknowledege the RPC request from
 	// a leader of a previous term.
 	RaftResultStaleLeader RaftResult = "RaftResultStaleLeader"
-
-	// RaftResultLowerTerm means the Sender was rejected because they had a lower term
-	RaftResultLowerTerm RaftResult = "RaftResultLowerTerm"
 
 	// RaftResultRejectedLeader means that the Sender was not acknowledged by a node (Follower, Leader, Candidate)
 	// as the leader of a current term. This can happen if there was a Split brain or network partition
@@ -26,16 +26,10 @@ const (
 	// RaftResultUnknownUnhandled accounts for situations that are unexpected or unhandled
 	RaftResultUnknownUnhandled RaftResult = "RaftResultUnknownUnhandled"
 
-	RaftResultSnapshot   RaftResult = "RaftResultSnapshot"
-	RaftResultVoteDenied RaftResult = "RaftResultVoteDenied"
-)
+	RaftResultSnapshot RaftResult = "RaftResultSnapshot"
 
-type VoteResult string
-
-const (
-	VoteResultVoteRequest VoteResult = "VoteResultVoteRequest"
-	VoteResultVoteDenied  VoteResult = "VoteResultVoteDenied"
-	VoteResultVoteGranted VoteResult = "VoteResultVoteGranted"
+	RaftResultVoteDenied  RaftResult = "RaftResultVoteDenied"
+	RaftResultVoteGranted RaftResult = "RaftResultVoteGranted"
 )
 
 type LogStatus int
@@ -56,18 +50,25 @@ func (rr RaftResult) String() string {
 	switch rr {
 	case RaftResultAcked:
 		return "RaftResultAcked"
-	case RaftResultLogsOutOfSync:
-		return "RaftResultLogsOutOfSync"
 	case RaftResultLowerTerm:
 		return "RaftResultLowerTerm"
-	case RaftResultRejectedLeader:
-		return "RaftResultRejectedLeader"
 	case RaftResultStaleLeader:
 		return "RaftResultStaleLeader"
+	case RaftResultRejectedLeader:
+		return "RaftResultRejectedLeader"
+	case RaftResultLogsOutOfSync:
+		return "RaftResultLogsOutOfSync"
 	case RaftResultUnknownUnhandled:
 		return "RaftResultUnknownUnhandled"
+	case RaftResultSnapshot:
+		return "RaftResultSnapshot"
+	case RaftResultVoteDenied:
+		return "RaftResultVoteDenied"
+	case RaftResultVoteGranted:
+		return "RaftResultVoteGranted"
 	default:
-		panic(fmt.Sprintf("unexpected main.RaftResult: %#v", rr))
+		msg := fmt.Sprintf("unexpected RaftResult: %s", string(rr))
+    return msg
 	}
 }
 
