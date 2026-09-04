@@ -90,15 +90,14 @@ func (lh *leaderHandler) AppendEntry(
 	}
 
 	if req.Term == currentTerm {
-		panicMsg := fmt.Sprintf(
-			` 
-      as leader, got append entry from another node with similar term.
-      currentTerm: %d,
-      Request:
-      %+v
-      `, currentTerm, req)
-
-		panic(panicMsg)
+		lh.logger.Warn("recvd appendEntry with the same term from another node")
+		return AppendEntryReply{
+			Id:               lh.id,
+			Term:             currentTerm,
+			Result:           RaftResultRejectedLeader,
+			PreviousLogIndex: prevLog.Index,
+			PreviousLogTerm:  prevLog.Term,
+		}, nil
 	}
 
 	raftState.UpdateTerm(req.Term, req.Id)
