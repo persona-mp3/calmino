@@ -131,8 +131,33 @@ func (lh *leaderHandler) Vote(
 		}, nil
 	}
 
+	logComplete := logCompletion(
+		prevLogEntry, req.PreviousLogIndex, req.PreviousLogTerm,
+	)
+
+	if !logComplete {
+		lh.logger.Info("logs from candidate are incomplete",
+			slog.Any("prevLogEntry", prevLogEntry),
+			slog.Any("reqPrevLogIndex", req.PreviousLogIndex),
+			slog.Any("reqPrevLogTerm", req.PreviousLogTerm),
+		)
+		return VoteReply{
+			Id:               lh.id,
+			Term:             currentTerm,
+			Result:           RaftResultVoteDenied,
+			Message:          "incomplete logs",
+			PreviousLogIndex: prevLogEntry.Index,
+			PreviousLogTerm:  prevLogEntry.Term,
+		}, nil
+	}
 	raftState.GrantVoteTo(req.Term, req.Id)
 	raftState.UpdateState(StateFollower)
+	lh.logger.Info("logs from candidate are complete",
+		slog.Any("prevLogEntry", prevLogEntry),
+		slog.Any("reqPrevLogIndex", req.PreviousLogIndex),
+		slog.Any("reqPrevLogTerm", req.PreviousLogTerm),
+	)
+
 	lh.logger.Info(
 		"recvd voteRPC from a higher term than leader, yeilding to them",
 		slog.Uint64("currentTerm", currentTerm), slog.Any("reqTerm", req),

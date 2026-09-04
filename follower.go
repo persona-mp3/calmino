@@ -197,8 +197,32 @@ func (fh *followerHandler) handleVoteRequest(req *VoteRequest) (RPCReply, RaftRe
 		}}, RaftResultVoteDenied
 	}
 
+	previousLogEntry := fh.logStore.PreviousEntry()
+	logsComplete := logCompletion(previousLogEntry, req.PreviousLogIndex, req.PreviousLogTerm)
+	if !logsComplete {
+		fh.logger.Info("logs from candidate are incomplete",
+			slog.Any("prevLogEntry", previousLogEntry),
+			slog.Any("reqPrevLogIndex", req.PreviousLogIndex),
+			slog.Any("reqPrevLogTerm", req.PreviousLogTerm),
+		)
+		return RPCReply{kind: RPCKindVote, payload: &VoteReply{
+			Id:               NodeId(fh.id),
+			Term:             currentTerm,
+			Message:          "logs incomplete",
+			Result:           RaftResultVoteDenied,
+			PreviousLogIndex: prevLog.Index,
+			PreviousLogTerm:  prevLog.Term,
+		}}, RaftResultVoteDenied
+	}
+
+	fh.logger.Info("follower: logs from candidate are complete",
+		slog.Any("prevLogEntry", previousLogEntry),
+		slog.Any("reqPrevLogIndex", req.PreviousLogIndex),
+		slog.Any("reqPrevLogTerm", req.PreviousLogTerm),
+	)
 	fh.raftState.GrantVoteTo(req.Term, req.Id)
 	log.Printf("[debug] follower granted vote for: %d, to: %s\n", req.Term, req.Id)
+
 	fh.raftState.UpdateTerm(req.Term, req.Id)
 	fh.logger.Info("granted vote to candidate and updated raftState",
 		slog.Uint64("previousTerm", currentTerm),
@@ -214,4 +238,40 @@ func (fh *followerHandler) handleVoteRequest(req *VoteRequest) (RPCReply, RaftRe
 		PreviousLogTerm:  prevLog.Term,
 	}}, RaftResultAcked
 
+}
+
+func logsUpToDate(prevLogEntry Log, reqTerm, reqIndex uint64) bool {
+	logTerm := prevLogEntry.Term
+	logIndex := prevLogEntry.Index
+
+	switch {
+	case logTerm == reqTerm:
+		if logIndex > reqIndex {
+			return false
+		} else {
+			return true
+		}
+	case logTerm > reqTerm:
+		return false
+	case logTerm < reqTerm:
+		return true
+	}
+	return true
+}
+
+func logCompletion(prevLogEntry Log, reqIndex, reqTerm uint64) bool {
+	term := prevLogEntry.Term
+	index := prevLogEntry.Index
+
+	if term > reqTerm {
+		return false
+	} else if term < reqTerm {
+		return true
+	}
+
+	if index > reqIndex {
+		return false
+	}
+
+	return true
 }

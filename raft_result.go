@@ -28,7 +28,10 @@ const (
 
 	RaftResultSnapshot RaftResult = "RaftResultSnapshot"
 
+	// RaftResultVoteDenied means that a Candidate was denied a vote
 	RaftResultVoteDenied  RaftResult = "RaftResultVoteDenied"
+
+	// RaftResultVoteGranted means that a Candidate was granted a vote
 	RaftResultVoteGranted RaftResult = "RaftResultVoteGranted"
 )
 
