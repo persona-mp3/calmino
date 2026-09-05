@@ -51,7 +51,7 @@ func TestLeaderHandler(t *testing.T) {
 			}
 			assert.Equal(
 				t, reply, expectedReply,
-				"when request comes from a higher the leader shoudl send RaftResultAcked")
+				"when request comes from a higher the leader should send RaftResultAcked")
 
 			assert.Equal(t, raftState.CurrentTerm(), higherTerm)
 			assert.Equal(t, raftState.CurrentLeader(), mockReq.Id)
