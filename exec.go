@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -45,15 +48,18 @@ func singleProcessCluster(rc *RawConfig) {
 				log.Panic("error creating config:", err)
 			}
 			config.Out = out
-			node := NewNode(id, addr, peers, &logStore, raftState, *config)
+			node := NewNode(id, addr, peers, logStore, raftState, *config)
 			allNodes = append(allNodes, node)
 		}
 	}
 
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGKILL)
+	defer cancel()
+
 	nodeWg := sync.WaitGroup{}
 	for _, node := range allNodes {
 		nodeWg.Go(func() {
-			if err := node.Run(); err != nil {
+			if err := node.Start(ctx); err != nil {
 				log.Println("could not start node:", node.id, err)
 			}
 		})

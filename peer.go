@@ -27,8 +27,8 @@ func (rp RPCPeer) Addr() string {
 	return rp.addr
 }
 
-func (rp RPCPeer) Call(serviceName string, req any, reply any) error {
-	return rp.conn.Call(serviceName, req, reply)
+func (rp RPCPeer) Call(serviceMethodName string, req any, reply any) error {
+	return rp.conn.Call(serviceMethodName, req, reply)
 }
 
 func (rp RPCPeer) Close() error {

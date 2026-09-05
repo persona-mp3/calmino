@@ -17,7 +17,7 @@ type Log struct {
 	Data  db.KV
 }
 
-// LogStore is used to provide an interface for storing and retreiving logs
+// LogStore is used to provide an interface for storing and retrieving logs
 type LogStore interface {
 	// PreviousLogEntry returns the second-to-last log. Returns an empty log
 	// if there are no more than 2 logs
@@ -27,7 +27,7 @@ type LogStore interface {
 	// returns all logs
 	SnapshotFrom(startIndex uint64) ([]Log, error)
 
-	// Apppend stores a log entry
+	// Append stores a log entry
 	Append(log *Log) uint64
 
 	// Commited returns the index that has be written to the database
@@ -39,6 +39,8 @@ type LogStore interface {
 
 	// FlushTill applies all logs till stopIndex
 	FlushTill(stopIndex uint64) error
+
+	LogAt(targetIdx uint64) (Log, error)
 }
 
 type Logs struct {
@@ -123,4 +125,14 @@ func (l *Logs) CommitIndex() uint64 {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.commitIdx
+}
+
+func (l *Logs) LogAt(targetIndex uint64) (Log, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if targetIndex >= uint64(len(l.logs)) {
+		return Log{}, ErrIndexNotFound
+	}
+	return *l.logs[targetIndex], nil
 }

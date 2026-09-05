@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
 	"sync"
-	"time"
 )
 
 type Node struct {
@@ -22,11 +22,11 @@ type Node struct {
 	connections []*RPCConn
 
 	// networkCh is shared with the Server to intercept incoming network RPCs
-	networkCh chan RPC
+	networkCh chan RPCPayload
 
 	server    *Server
 	raftState *RaftState
-	logStore  *LogStore
+	logStore  LogStore
 
 	logger        *slog.Logger
 	configuration Configuration
@@ -43,7 +43,7 @@ func NewNode(
 	id,
 	addr string,
 	peers []string,
-	logStore *LogStore,
+	logStore LogStore,
 	raftState *RaftState,
 	config Configuration,
 ) *Node {
@@ -61,8 +61,8 @@ func NewNode(
 			))
 	}
 
-	networkCh := make(chan RPC)
-	server := NewServer(addr, networkCh)
+	networkCh := make(chan RPCPayload)
+	server := NewServer(addr, networkCh, logger)
 
 	return &Node{
 		mu:         sync.Mutex{},
@@ -77,16 +77,36 @@ func NewNode(
 	}
 }
 
-func (n *Node) Run() error {
-	electionTimeout := n.raftState.ElectionTimeout()
-	<-time.After(electionTimeout)
-	// TODO: startServer
-	n.logger.Info("node recvd no hearbeat, transition to candidate")
-	n.logger.Info(n.Diagnostics())
-	return nil
+func (n *Node) Start(mainCtx context.Context) error {
+	errCh := make(chan error)
+	go func() {
+		if err := n.server.Run(mainCtx, "tcp", n.listenAddr); err != nil {
+			n.logger.Error("server failed with: ", slog.Any("err", err))
+			errCh <- err
+		}
+	}()
+
+	for {
+		switch n.raftState.State() {
+		case StateFollower:
+			if err := n.runFollower(mainCtx, errCh); err != nil {
+				return fmt.Errorf("runFollower err: %w", err)
+			}
+		case StateCandidate:
+			if err := n.runCandidate(mainCtx, errCh); err != nil {
+				return fmt.Errorf("runCandidate err: %w", err)
+			}
+		case StateLeader:
+			if err := n.runLeader(mainCtx, errCh); err != nil {
+				return fmt.Errorf("runLeader err: %w", err)
+			}
+
+		}
+	}
 }
 
 // Diagnositcs returns string represntation of the nodes current state
 func (n *Node) Diagnostics() string {
-	return fmt.Sprintf(`Node { id: %s, addr: %s,  peers: %+v, %s`, n.id, n.listenAddr, n.peers, n.raftState.String())
+	return fmt.Sprintf(`Node { id: %s, addr: %s,  peers: %+v, %s`,
+		n.id, n.listenAddr, n.peers, n.raftState.String())
 }
