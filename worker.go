@@ -52,7 +52,7 @@ import (
 //
 // // not sure yet, might want startReplication to take a request instead
 // func startReplication(ctx context.Context, dur time.Duration, log Log, workers []*Worker) bool {
-// 	 done := make(chan struct{}, len(workers))
+// 	 done := make(chan struct{}, len(workers)*2) // make sure others can still send
 // 	 replicateCmd := replicate{log: log, done: done}
 // 	 sendTicker := ticker.NewTicker(SendChannelTimeout)
 // 	 for _, worker := range workers {
