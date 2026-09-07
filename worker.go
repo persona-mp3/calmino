@@ -50,45 +50,46 @@ import (
 //
 // // not sure yet, might want startReplication to take a request instead
 // func startReplication(ctx context.Context, dur time.Duration, log Log, workers []*Worker) bool {
-// 	done := make(chan struct{}, len(workers))
-// 	replicateCmd := replicate{log: log, done: done}
-// 	sendTicker := ticker.NewTicker(SendChannelTimeout)
-// 	for _, worker := range workers {
-// 		sendTicker.Reset(SendChannelTimeout)
-// 		go func(){
-// 			select {
-// 			case worker.replicate <- done:
-// 			case <-sendTicker.C:
-// 				// would not want to use ctx here because we dont need the cancel and 
-// 				// will need to create a new one for each iteration. ticker automatically 
-// 				// resolves both or a timer instead?
-// 				logger.Warn("worker has been blocked, dropping replicate command")
+// 	 done := make(chan struct{}, len(workers))
+// 	 replicateCmd := replicate{log: log, done: done}
+// 	 sendTicker := ticker.NewTicker(SendChannelTimeout)
+// 	 for _, worker := range workers {
+// 	 	sendTicker.Reset(SendChannelTimeout)
+// 	 	go func(){
+// 	 		select {
+// 	 		case worker.replicate <- replicateCmd:
+// 	 		case <-sendTicker.C:
+// 	 			// would not want to use ctx here because we dont need the cancel and 
+// 	 			// will need to create a new one for each iteration. ticker automatically 
+// 	 			// resolves both or a timer instead?
+// 	 			logger.Warn("worker has been blocked, dropping replicate command")
 //
-// 			}
-// 		}()
-// 	}
+// 	 		}
+// 	 	}()
+// 	 }
 //
-// 	replicationTimeoutCtx, cancel := context.WithTimeout(ctx, dur)
-// 	defer cancel()
+// 	 replicationTimeoutCtx, cancel := context.WithTimeout(ctx, dur)
+// 	 defer cancel()
 //
-// 	votes := 1
-// 	for {
-// 		if err := replicationTimeoutCtx.Error() != nil {
-// 			break
-// 		}
-// 		if votes >= expectedMajority {
-// 			return true
-// 		}
-// 		select {
-// 		case <-done:
-// 			votes += 1
-// 		case <-replicationTimeoutCtx:
-// 			break
-// 		}
-// 	}
+// 	 votes := 1
+// 	 for {
+// 	 	 if err := replicationTimeoutCtx.Error() != nil {
+// 	 	 	break
+// 	 	 }
+// 	 	 if votes >= expectedMajority {
+// 	 	 	return true
+// 	 	 }
+// 	 	 select {
+// 	 	 case <-done:
+// 	 	 	votes += 1
+// 	 	 case <-replicationTimeoutCtx:
+// 	 	 	break
+// 	 	 }
+// 	 }
 //
-// 	return votes >= expectedMajority
+// 	 return votes >= expectedMajority
 // }
+//
 // func (l *leader) startWorkers(
 // 	ctx context.Context, 
 // 	commitTracker *atomic.Uint64, 
@@ -102,6 +103,7 @@ import (
 // 		}
 //
 // 		wg.Wait()
+// 		logger.Debug("all workers returned")
 // }
 
 type replicate struct {
