@@ -5,12 +5,14 @@ import (
 	"time"
 )
 
+// QUESTION
 // This is supposed to be an extension of the leader, where they're responsible
 // for sending heartbeat to all connected nodes in the cluster. Each worker should
 // also be able to assit the leader in replicating data across nodes when client
 // commands come in. But how would a worker know about a change in commit index?
-// Do we just give them a a pointer value to share?
-//
+// Do we just give them a a pointer value to share? Because raftState.CommitIdx()
+// returns the latest, but theres a mutex there, and calling that amongs other 
+// routines at random timeouts is expensive
 //
 // type leader struct {
 // 		handler        Handler
