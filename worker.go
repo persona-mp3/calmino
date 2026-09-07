@@ -35,6 +35,7 @@ func startReplication(
 	for _, worker := range workers {
 		go func(w *Worker) {
 			ticker := time.NewTicker(SendChanTimeout)
+			defer ticker.Stop()
 			select {
 			case worker.replicateCh <- entry:
 			case <-ticker.C:
