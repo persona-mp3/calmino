@@ -19,24 +19,24 @@ type RPCPeer struct {
 	conn *rpc.Client
 }
 
-func (rp RPCPeer) Id() string {
+func (rp *RPCPeer) Id() string {
 	return rp.id
 }
 
-func (rp RPCPeer) Addr() string {
+func (rp *RPCPeer) Addr() string {
 	return rp.addr
 }
 
-func (rp RPCPeer) Call(serviceMethodName string, req any, reply any) error {
+func (rp *RPCPeer) Call(serviceMethodName string, req any, reply any) error {
 	return rp.conn.Call(serviceMethodName, req, reply)
 }
 
-func (rp RPCPeer) Close() error {
+func (rp *RPCPeer) Close() error {
 	return rp.conn.Close()
 }
 func NewRPCPeer(id, addr string, conn *rpc.Client) RPCConn {
 	if conn == nil {
 		panic("cannot pass in nil conn to NewRPCPeer")
 	}
-	return RPCPeer{id: id, addr: addr, conn: conn}
+	return &RPCPeer{id: id, addr: addr, conn: conn}
 }

@@ -61,6 +61,8 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 		return nil
 	}
 
+	// TASK 5. Impl caching rpc connections
+	n.rpcConnections = rpcPeers
 	if candidate, granted := n.raftState.HasVotedFor(newTerm); granted {
 		err := NewCandidateError(newTerm, ErrElectingForPastTerm, granted, candidate, n.raftState.String())
 		return err
@@ -176,7 +178,7 @@ func collectOtherVotes(
 	timeoutCtx context.Context,
 	req VoteRequest,
 	clusterSize int,
-	peers []*RPCPeer,
+	peers []RPCConn,
 	won chan bool,
 ) {
 	collectedVotes := atomic.Uint64{}
@@ -185,7 +187,7 @@ func collectOtherVotes(
 	majorityVote := (clusterSize / 2) + 1
 
 	for _, peer := range peers {
-		go func(peer *RPCPeer, voteCh chan struct{}) {
+		go func(peer RPCConn, voteCh chan struct{}) {
 			reply := VoteReply{}
 			if err := peer.Call("Server.VoteRPC", req, &reply); err != nil {
 				log.Println("[error] failed to call VoteRPC", err)

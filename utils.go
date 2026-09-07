@@ -64,8 +64,8 @@ func startPprofServer(addr string) error {
 	return nil
 }
 
-func connectToPeers(network string, addrs []string) []*RPCPeer {
-	rpcPeers := []*RPCPeer{}
+func connectToPeers(network string, addrs []string) []RPCConn {
+	rpcPeers := []RPCConn{}
 	for idx, addr := range addrs {
 		conn, err := rpc.Dial(network, addr)
 		if err != nil {

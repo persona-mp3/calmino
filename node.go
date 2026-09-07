@@ -19,7 +19,7 @@ type Node struct {
 	peers []string
 
 	// connections hold rpc connections to different nodes
-	connections []*RPCConn
+	rpcConnections []RPCConn
 
 	// networkCh is shared with the Server to intercept incoming network RPCs
 	networkCh chan RPCPayload
