@@ -32,7 +32,7 @@ import (
 // 						log := l.store.ReqToLog(req)
 // 						idx := l.store.Append(log)
 // 						log.Index = idx
-// 						success := startReplication(log)
+// 						success := startReplication(500 * time.Millisecond, log, l.workers)
 // 						if !success {
 // 							payload.reply <- RPCReply{Command: {"error, please try again"}}
 // 							continue
@@ -49,25 +49,31 @@ import (
 // }
 //
 // // not sure yet, might want startReplication to take a request instead
-// func startReplication(log Log, workers []*Worker) bool {
+// func startReplication(ctx context.Context, dur time.Duration, log Log, workers []*Worker) bool {
 // 	done := make(chan struct{}, len(workers))
 // 	replicateCmd := replicate{log: log, done: done}
+// 	sendTicker := ticker.NewTicker(SendChannelTimeout)
 // 	for _, worker := range workers {
+// 		sendTicker.Reset(SendChannelTimeout)
 // 		go func(){
 // 			select {
 // 			case worker.replicate <- done:
-// 			case <-ticker.C:
+// 			case <-sendTicker.C:
 // 				// would not want to use ctx here because we dont need the cancel and 
 // 				// will need to create a new one for each iteration. ticker automatically 
-// 				// resolves both
+// 				// resolves both or a timer instead?
 // 				logger.Warn("worker has been blocked, dropping replicate command")
+//
 // 			}
 // 		}()
 // 	}
 //
+// 	replicationTimeoutCtx, cancel := context.WithTimeout(ctx, dur)
+// 	defer cancel()
+//
 // 	votes := 1
 // 	for {
-// 		if err := ReplicationTimeoutCtx.Error() != nil {
+// 		if err := replicationTimeoutCtx.Error() != nil {
 // 			break
 // 		}
 // 		if votes >= expectedMajority {
@@ -76,7 +82,7 @@ import (
 // 		select {
 // 		case <-done:
 // 			votes += 1
-// 		case <-ReplicationTimeoutCtx:
+// 		case <-replicationTimeoutCtx:
 // 			break
 // 		}
 // 	}
