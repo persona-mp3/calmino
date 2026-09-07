@@ -3,6 +3,8 @@ package main
 import (
 	db "calmino/database"
 	"fmt"
+	"io"
+	"time"
 
 	"pgregory.net/rapid"
 )
@@ -25,4 +27,13 @@ func generateLogEntries(rt *rapid.T, min, max uint64) []*Log {
 	}
 
 	return logEntries
+}
+
+func newTestNode(id, addr string, timeout time.Duration, out io.Writer) *Node {
+	store := NewLogStore()
+	state := NewRaftState(timeout)
+	node := NewNode(id, addr, []string{}, store, state, Configuration{
+		Out: out,
+	})
+	return node
 }

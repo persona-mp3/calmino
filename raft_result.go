@@ -29,7 +29,7 @@ const (
 	RaftResultSnapshot RaftResult = "RaftResultSnapshot"
 
 	// RaftResultVoteDenied means that a Candidate was denied a vote
-	RaftResultVoteDenied  RaftResult = "RaftResultVoteDenied"
+	RaftResultVoteDenied RaftResult = "RaftResultVoteDenied"
 
 	// RaftResultVoteGranted means that a Candidate was granted a vote
 	RaftResultVoteGranted RaftResult = "RaftResultVoteGranted"
@@ -71,7 +71,7 @@ func (rr RaftResult) String() string {
 		return "RaftResultVoteGranted"
 	default:
 		msg := fmt.Sprintf("unexpected RaftResult: %s", string(rr))
-    return msg
+		return msg
 	}
 }
 
