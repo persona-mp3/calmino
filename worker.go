@@ -19,10 +19,14 @@ type Worker struct {
 var SendChanTimeout = 300 * time.Millisecond
 
 func startReplication(
-	ctx context.Context, req AppendEntryRequest, dur time.Duration,
-	clusterSize int, workers []*Worker, logger *slog.Logger,
+	ctx context.Context,
+	req AppendEntryRequest,
+	dur time.Duration,
+	clusterSize int,
+	workers []*Worker,
+	logger *slog.Logger,
 ) bool {
-	replicated := make(chan struct{}, len(workers)*2) // make sure workers can still send otherwise
+	replicated := make(chan struct{}, len(workers)*2) // make sure workers can still send with no receiver
 	entry := replicate{
 		replicated: replicated,
 		req:        req,
@@ -57,7 +61,6 @@ func startReplication(
 		case <-replicated:
 			replicasMade += 1
 		case <-replicationTimeoutCtx.Done():
-			break
 		}
 	}
 
