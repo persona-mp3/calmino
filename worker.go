@@ -34,12 +34,13 @@ import (
 // 						log := l.store.ReqToLog(req)
 // 						idx := l.store.Append(log)
 // 						log.Index = idx
-// 						success := startReplication(500 * time.Millisecond, log, l.workers)
+// 						success := startReplication(ctx, 500 * time.Millisecond, log, l.workers)
 // 						if !success {
 // 							payload.reply <- RPCReply{Command: {"error, please try again"}}
 // 							continue
 // 						}
 //
+// 					// TODO look for way to make commitIdx visible to workers
 // 					result, commitIdx := l.store.Flush()
 // 					payload.reply <- RPCReply{Command: {result}}
 // 				default:
@@ -54,10 +55,9 @@ import (
 // func startReplication(ctx context.Context, dur time.Duration, log Log, workers []*Worker) bool {
 // 	 done := make(chan struct{}, len(workers)*2) // make sure others can still send
 // 	 replicateCmd := replicate{log: log, done: done}
-// 	 sendTicker := ticker.NewTicker(SendChannelTimeout)
 // 	 for _, worker := range workers {
-// 	 	sendTicker.Reset(SendChannelTimeout)
 // 	 	go func(){
+// 	    sendTicker := time.NewTicker(SendChannelTimeout)
 // 	 		select {
 // 	 		case worker.replicate <- replicateCmd:
 // 	 		case <-sendTicker.C:
@@ -75,7 +75,7 @@ import (
 //
 // 	 votes := 1
 // 	 for {
-// 	 	 if err := replicationTimeoutCtx.Error() != nil {
+// 	 	 if err := replicationTimeoutCtx.Err(); != nil {
 // 	 	 	break
 // 	 	 }
 // 	 	 if votes >= expectedMajority {
