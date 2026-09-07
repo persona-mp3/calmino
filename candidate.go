@@ -62,20 +62,8 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 	}
 
 	if candidate, granted := n.raftState.HasVotedFor(newTerm); granted {
-		panicMsg := fmt.Sprintf(
-			` 
-			already granted vote for newTerm: %d while in Candidate state
-	    Candidate is supposed to start election and vote for a higher/new term
-	    -------------------
-			Granted: %t
-	    ToCandidate: %s,
-			-------------------
-	    RaftState:
-			-------------------
-	      %s
-	     `, newTerm, granted, candidate, n.raftState.String())
-
-		panic(panicMsg)
+		err := NewCandidateError(newTerm, ErrElectingForPastTerm, granted, candidate, n.raftState.String())
+		return err
 	}
 
 	n.raftState.GrantVoteTo(newTerm, NodeId(n.id))
