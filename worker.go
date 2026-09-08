@@ -13,8 +13,9 @@ type Worker struct {
 	// leaderId is the id of the current node
 	leaderId NodeId
 	// term is the current term of the leader, ideally this should not change
-	term        uint64
-	store       LogStore
+	term  uint64
+	store LogStore
+	// replicateCh is used when a replication needs to applied across the cluster
 	replicateCh chan replicate
 	logger      *slog.Logger
 }
@@ -64,6 +65,7 @@ func (w *Worker) Run(leaderCtx context.Context, initialReq AppendEntryRequest, p
 			initialReq.CommitIndex = commitIdx
 			initialReq.PreviousLogIndex = prevLogEntry.Index
 			initialReq.PreviousLogTerm = prevLogEntry.Term
+			commitIdx = w.store.CommitIndex()
 
 		case <-ticker.C:
 			reply := AppendEntryReply{}
