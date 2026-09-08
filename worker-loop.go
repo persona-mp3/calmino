@@ -73,6 +73,7 @@ func wokerLoop(
 				err := sendHB(ctx, peers, req, exit)
 				if err != nil {
 					log.Println("[error] from sendHB", err)
+					return
 				}
 			}()
 			ticker.Reset(time.Millisecond * 300)
