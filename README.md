@@ -1,7 +1,8 @@
 ## 🚀 calmino
 ![Tests](https://github.com/persona-mp3/calmino/actions/workflows/test.yml/badge.svg)
 
-calmino is an ongoing refactor of [fsm](https://github.com/persona-mp3/fsm.git)
+calmino is an ongoing refactor of [fsm](https://github.com/persona-mp3/fsm.git), 
+a Raft Consensus implementation.
 
 
 
