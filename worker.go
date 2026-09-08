@@ -44,7 +44,7 @@ func (w *Worker) Run(leaderCtx context.Context, initialReq AppendEntryRequest, p
 		case replicateReq := <-w.replicateCh:
 			req := replicateReq.req
 			reply := AppendEntryReply{}
-			if err := peer.Call("Server.AppendEntry", req, &reply); err != nil {
+			if err := peer.Call("Server.AppendEntryRPC", req, &reply); err != nil {
 				w.logger.Error("failed to send replication request to", "peer", peer.Id(), "err", err)
 				continue
 			}
@@ -70,7 +70,7 @@ func (w *Worker) Run(leaderCtx context.Context, initialReq AppendEntryRequest, p
 		case <-ticker.C:
 			reply := AppendEntryReply{}
 			// TODO: Add retrials just incase
-			if err := peer.Call("Server.AppendEntry", initialReq, &reply); err != nil {
+			if err := peer.Call("Server.AppendEntryRPC", initialReq, &reply); err != nil {
 				w.logger.Error("failed to send heertbeat request to", "peer", peer.Id(), "err", err)
 				continue
 			}
@@ -88,6 +88,7 @@ func (w *Worker) Run(leaderCtx context.Context, initialReq AppendEntryRequest, p
 		}
 	}
 }
+
 func (w *Worker) syncLogsWithPeer(ctx context.Context, peer RPCConn, reply AppendEntryReply) {
 	w.logger.Error("snapshot for syncLogsWithPeer not implemented", "reply", reply)
 	panic("snapshot for syncLogsWithPeer not implemented")
