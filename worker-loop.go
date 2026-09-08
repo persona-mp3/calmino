@@ -17,6 +17,7 @@ func wokerLoop(
 	id NodeId,
 	replicateCh chan replicate,
 	peers []RPCConn,
+	majority int,
 	store LogStore,
 	term uint64,
 	raft *RaftState,
@@ -70,7 +71,7 @@ func wokerLoop(
 			}
 			// TODO: might need a goroutine pool here?
 			go func() {
-				err := sendHB(leaderCtx, peers, req, exit)
+				err := sendHB(leaderCtx, majority, peers, req, exit)
 				if err != nil {
 					log.Println("[error] from sendHB", err)
 					return
@@ -84,16 +85,16 @@ func wokerLoop(
 	}
 }
 
-func sendHB(leaderCtx context.Context, peers []RPCConn, req AppendEntryRequest, exit chan struct{}) error {
-	failed := atomic.Uint64{}
+func sendHB(leaderCtx context.Context, qorumTarget int, peers []RPCConn, req AppendEntryRequest, exit chan struct{}) error {
+	success := atomic.Uint64{}
 	wg := sync.WaitGroup{}
 	for _, peer := range peers {
 		wg.Add(1)
-		go func(peer RPCConn, failed *atomic.Uint64) {
+		go func(peer RPCConn, success *atomic.Uint64) {
 			reply := AppendEntryReply{}
 			if err := peer.Call("Server.AppendEntry", req, &reply); err != nil {
 				log.Println("[error] sending heartbeat", err)
-				failed.Add(1)
+				success.Add(1)
 				return
 			}
 
@@ -101,9 +102,9 @@ func sendHB(leaderCtx context.Context, peers []RPCConn, req AppendEntryRequest, 
 			case RaftResultAcked, RaftResultLogsOutOfSync:
 			default:
 				log.Printf("[info] was not acked by follower: %+v\n", reply)
-				failed.Add(1)
+				success.Add(1)
 			}
-		}(peer, &failed)
+		}(peer, &success)
 	}
 
 	done := make(chan struct{}, 1)
@@ -118,7 +119,7 @@ func sendHB(leaderCtx context.Context, peers []RPCConn, req AppendEntryRequest, 
 		return fmt.Errorf("from sendHB: %w", leaderCtx.Err())
 	case <-done:
 	}
-	ackedByMajority := failed.Load() <= uint64(len(peers))
+	ackedByMajority := success.Load() >= uint64(qorumTarget)
 	if !ackedByMajority {
 		close(exit)
 	}
