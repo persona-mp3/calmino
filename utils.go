@@ -15,13 +15,13 @@ import (
 )
 
 func randomDuration(d time.Duration) time.Duration {
-	limit := big.NewInt(int64(ELECTION_INTERVAL_MAX - ELECTION_INTERVAL_MIN + 1))
+	limit := big.NewInt(int64(ElectionIntervalMax - ElectionIntervalMin + 1))
 	n, err := rand.Int(rand.Reader, limit)
 	if err != nil {
 		log.Println("warning:: random generator returned 1", n, err)
 	}
 
-	actualInterval := n.Int64() + int64(ELECTION_INTERVAL_MIN)
+	actualInterval := n.Int64() + int64(ElectionIntervalMin)
 	return d * time.Duration(actualInterval)
 }
 

@@ -131,6 +131,10 @@ func (l *Logs) LogAt(targetIndex uint64) (Log, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
+	if len(l.logs) == 0 {
+		return Log{}, nil
+	}
+
 	if targetIndex >= uint64(len(l.logs)) {
 		return Log{}, ErrIndexNotFound
 	}

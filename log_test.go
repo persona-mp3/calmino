@@ -49,8 +49,10 @@ func TestLogStoreSnapshotFrom(t *testing.T) {
 		logSize := uint64(len(logEntries))
 
 		logStore := NewLogStore()
-		for _, log := range logEntries {
-			logStore.Append(log)
+		if logSize >= 1 {
+			for _, log := range logEntries {
+				logStore.Append(log)
+			}
 		}
 
 		uint64NumberGen := rapid.Uint64Range(0, 99)

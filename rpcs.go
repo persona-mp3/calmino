@@ -38,9 +38,9 @@ type SnapshotReply struct {
 type AppendEntryRequest struct {
 	Id               NodeId
 	Term             uint64
-	Result           RaftResult
 	PreviousLogIndex uint64
 	PreviousLogTerm  uint64
+	CommitIndex      uint64
 }
 
 type AppendEntryReply struct {

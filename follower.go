@@ -111,6 +111,7 @@ func (fh followerHandler) handleAppendEntryRequest(req *AppendEntryRequest) (RPC
 	fh.raftState.UpdateTerm(req.Term, req.Id)
 
 	logRaftResult := inspectLogs(req, fh.logStore)
+	fh.logger.Info("follower: append entry req", string(fh.id), slog.Any("req", req))
 
 	reply.Result = logRaftResult
 	return RPCReply{kind: RPCKindAppendEntry, payload: &reply}, logRaftResult
@@ -132,11 +133,13 @@ func inspectLogs(
 	if err != nil {
 		return RaftResultLogsOutOfSync
 	}
-	if previousLogEntry.Term == req.PreviousLogTerm {
-		return RaftResultLogsOutOfSync
+
+	if req.PreviousLogTerm >= previousLogEntry.Term &&
+		req.PreviousLogIndex >= previousLogEntry.Index {
+		return RaftResultAcked
 	}
 
-	return RaftResultAcked
+	return RaftResultLogsOutOfSync
 }
 
 // verifyLeader checks if the request came from a valid leader for the current
