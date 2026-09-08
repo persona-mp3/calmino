@@ -3,21 +3,32 @@ package main
 import (
 	"context"
 	"log/slog"
+	"sync/atomic"
 	"time"
 )
 
 type replicate struct {
+	// replicated is used to signify an entry that have been successfully replicated
+	// on a peer
 	replicated chan struct{}
-	req        AppendEntryRequest
+	// req is the append entry to be replicated across the connected peers
+	req AppendEntryRequest
 }
 
 type Worker struct {
-	id          string
+	id        string
+	commitIdx *atomic.Uint64
+	// replicateCh is used by the leader to start a repication across peers
 	replicateCh chan replicate
 }
 
 var SendChanTimeout = 300 * time.Millisecond
 
+// startReplication starts a replication across the cluster via the workers.
+//
+// If a quorum is reached ie a majority of the cluster have replicated the request
+// to their logs, it returns true, otherwise false. The [dur] is used to ensure
+// that replication has a hard set limit
 func startReplication(
 	ctx context.Context,
 	req AppendEntryRequest,
@@ -26,7 +37,9 @@ func startReplication(
 	workers []*Worker,
 	logger *slog.Logger,
 ) bool {
-	replicated := make(chan struct{}, len(workers)*2) // make sure workers can still send with no receiver
+	// make sure workers can still send if no receiver
+	replicated := make(chan struct{}, len(workers)*2)
+
 	entry := replicate{
 		replicated: replicated,
 		req:        req,
