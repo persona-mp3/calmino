@@ -13,7 +13,7 @@ import (
 // seperate workers?
 
 func wokerLoop(
-	ctx context.Context,
+	leaderCtx context.Context,
 	id NodeId,
 	replicateCh chan replicate,
 	peers []RPCConn,
@@ -35,7 +35,7 @@ func wokerLoop(
 
 	for {
 		select {
-		case <-ctx.Done():
+		case <-leaderCtx.Done():
 			return
 		case replica := <-replicateCh:
 			for _, peer := range peers {
@@ -70,7 +70,7 @@ func wokerLoop(
 			}
 			// TODO: might need a goroutine pool here?
 			go func() {
-				err := sendHB(ctx, peers, req, exit)
+				err := sendHB(leaderCtx, peers, req, exit)
 				if err != nil {
 					log.Println("[error] from sendHB", err)
 					return
@@ -84,7 +84,7 @@ func wokerLoop(
 	}
 }
 
-func sendHB(ctx context.Context, peers []RPCConn, req AppendEntryRequest, exit chan struct{}) error {
+func sendHB(leaderCtx context.Context, peers []RPCConn, req AppendEntryRequest, exit chan struct{}) error {
 	failed := atomic.Uint64{}
 	wg := sync.WaitGroup{}
 	for _, peer := range peers {
@@ -114,8 +114,8 @@ func sendHB(ctx context.Context, peers []RPCConn, req AppendEntryRequest, exit c
 	}()
 
 	select {
-	case <-ctx.Done():
-		return fmt.Errorf("from sendHB: %w", ctx.Err())
+	case <-leaderCtx.Done():
+		return fmt.Errorf("from sendHB: %w", leaderCtx.Err())
 	case <-done:
 	}
 	ackedByMajority := failed.Load() <= uint64(len(peers))
