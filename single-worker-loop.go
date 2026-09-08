@@ -11,7 +11,6 @@ import (
 
 // What if we just had a single loop sending out the heartbeats? instead of
 // seperate workers?
-
 func wokerLoop(
 	leaderCtx context.Context,
 	id NodeId,
@@ -77,7 +76,7 @@ func wokerLoop(
 					return
 				}
 			}()
-			ticker.Reset(time.Millisecond * 300)
+			ticker.Reset(time.Duration(HeartbeatInterval) * time.Millisecond)
 		case <-exit:
 			log.Println("[info] exit channel fired")
 			return
@@ -100,9 +99,9 @@ func sendHB(leaderCtx context.Context, qorumTarget int, peers []RPCConn, req App
 
 			switch reply.Result {
 			case RaftResultAcked, RaftResultLogsOutOfSync:
+				success.Add(1)
 			default:
 				log.Printf("[info] was not acked by follower: %+v\n", reply)
-				success.Add(1)
 			}
 		}(peer, &success)
 	}
