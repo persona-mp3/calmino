@@ -4,20 +4,51 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 )
 
 func (n *Node) runLeader(mainCtx context.Context, serverErrCh chan error) error {
-	childCtx, cancel := context.WithCancel(mainCtx)
-	defer cancel()
-
-	_ = childCtx
-	currentState := n.raftState.State()
-	if currentState != StateLeader {
-		return nil
-	}
-
 	n.logger.Info("leader state started successfully")
 	handler := NewLeaderHandler(NodeId(n.id), n.logger)
+
+	// TASK Assume the candidate left connections open and persistent and start
+	// workers on them
+
+	currentTerm := n.raftState.CurrentTerm()
+	previousLogEntry := n.logStore.PreviousEntry()
+	commitIdx := n.logStore.CommitIndex()
+	workerWg := sync.WaitGroup{}
+
+	leaderCtx, cancel := context.WithCancel(mainCtx)
+	defer func() {
+		cancel()
+		n.raftState.UpdateState(StateFollower)
+		for _, peer := range n.rpcConnections {
+			if err := peer.Close(); err != nil {
+				n.logger.Error("could not close connection", "id", peer.Id(), "err", err)
+			}
+		}
+	}()
+
+	initialReq := AppendEntryRequest{
+		Id:               NodeId(n.id),
+		Term:             currentTerm,
+		PreviousLogIndex: previousLogEntry.Index,
+		PreviousLogTerm:  previousLogEntry.Term,
+		CommitIndex:      commitIdx,
+	}
+	for _, peer := range n.rpcConnections {
+		replicateCh := make(chan replicate)
+		worker := NewWorker(NodeId(n.id), currentTerm, n.logStore, replicateCh, n.logger)
+		workerWg.Go(func() { worker.Run(leaderCtx, initialReq, peer) })
+
+	}
+
+	workersReturned := make(chan struct{})
+	go func() {
+		workerWg.Wait()
+		close(workersReturned)
+	}()
 
 	for {
 		currentState := n.raftState.State()
@@ -33,15 +64,18 @@ func (n *Node) runLeader(mainCtx context.Context, serverErrCh chan error) error 
 			return mainCtx.Err()
 		case err := <-serverErrCh:
 			return err
-		case payload := <-n.networkCh:
-			n.logger.Info("recvd payload", slog.Any("payload", payload))
-			reply, _, err := router(payload, n.raftState, n.logStore, handler)
+		case rpcPayload := <-n.networkCh:
+			n.logger.Info("received rpcPayload", slog.Any("payload", rpcPayload))
+			reply, _, err := router(rpcPayload, n.raftState, n.logStore, handler)
 			if err != nil {
 				// TODO: Proper error handling
 				panic(err)
 			}
 
-			payload.reply <- reply
+			rpcPayload.reply <- reply
+		case <-workersReturned:
+			n.logger.Warn("all workers have returned, exiting leader state")
+			return nil
 		}
 	}
 

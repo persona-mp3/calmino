@@ -7,7 +7,7 @@ import (
 
 func (s *Server) AppendEntryRPC(req AppendEntryRequest, reply *AppendEntryReply) error {
 	res := make(chan RPCReply, 1)
-	payload := RPCPayload{kind: RPCKindSnapshot, payload: req, reply: res}
+	payload := RPCPayload{kind: RPCKindAppendEntry, payload: req, reply: res}
 	s.network <- payload
 
 	data := <-res

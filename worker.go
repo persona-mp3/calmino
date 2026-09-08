@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"log/slog"
 	"time"
 )
@@ -77,8 +79,10 @@ func (w *Worker) Run(leaderCtx context.Context, initialReq AppendEntryRequest, p
 
 			switch reply.Result {
 			case RaftResultAcked:
+				log.Printf("follower acked: %s %+v\n", reply.Id, reply)
 			case RaftResultLogsOutOfSync:
 				w.syncLogsWithPeer(leaderCtx, peer, reply)
+				log.Println("logs out of sync from: ", reply.Id, reply)
 			default:
 				w.logger.Warn("did not get acked by peer", "id", peer.Id(), "reply", reply)
 				return
@@ -89,7 +93,8 @@ func (w *Worker) Run(leaderCtx context.Context, initialReq AppendEntryRequest, p
 	}
 }
 
-func (w *Worker) syncLogsWithPeer(ctx context.Context, peer RPCConn, reply AppendEntryReply) {
-	w.logger.Error("snapshot for syncLogsWithPeer not implemented", "reply", reply)
-	panic("snapshot for syncLogsWithPeer not implemented")
+func (w *Worker) syncLogsWithPeer(ctx context.Context, peer RPCConn, reply AppendEntryReply) error {
+	msg := fmt.Sprintf("snapshot for syncLogsWithPeer not implemented. reply: %+v", reply)
+	w.logger.Error(msg)
+	return fmt.Errorf("%s", msg)
 }
