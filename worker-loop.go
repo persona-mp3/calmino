@@ -31,6 +31,7 @@ func wokerLoop(
 	exit := make(chan struct{})
 
 	prevLogEntry := store.PreviousEntry()
+	commitIdx := store.CommitIndex()
 
 	for {
 		select {
@@ -55,12 +56,17 @@ func wokerLoop(
 				}(replica.replicated)
 			}
 
+			// update the values so ticker can read them
+			prevLogEntry = store.PreviousEntry()
+			commitIdx = store.CommitIndex()
+
 		case <-ticker.C:
 			req := AppendEntryRequest{
 				Id:               id,
 				Term:             term,
 				PreviousLogIndex: prevLogEntry.Index,
 				PreviousLogTerm:  prevLogEntry.Term,
+				CommitIndex:      commitIdx,
 			}
 			// TODO: might need a goroutine pool here?
 			go func() {

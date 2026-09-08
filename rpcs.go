@@ -41,6 +41,7 @@ type AppendEntryRequest struct {
 	Result           RaftResult
 	PreviousLogIndex uint64
 	PreviousLogTerm  uint64
+	CommitIndex      uint64
 }
 
 type AppendEntryReply struct {
