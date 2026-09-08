@@ -8,6 +8,15 @@ import (
 	"time"
 )
 
+// replicate is a command sent to workers to replicate a req received by the leader
+type replicate struct {
+	// replicated is used to signify an entry that have been successfully replicated
+	// on a peer
+	replicated chan struct{}
+	// req is the append entry to be replicated across the connected peers
+	req AppendEntryRequest
+}
+
 // what if the node just has [node.liveCommitIdx] and we give it to the workers? And whenever
 // the workers recv a message via replica they then -> liveCommitIdx.Load()? or we just give
 // them the [LogStore] because they'll still need to handle snapshotting

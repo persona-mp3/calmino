@@ -1,5 +1,4 @@
 package main
-
 // QUESTION
 // This is supposed to be an extension of the leader, where they're responsible
 // for sending heartbeat to all connected nodes in the cluster. Each worker should
