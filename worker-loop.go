@@ -49,7 +49,7 @@ func wokerLoop(
 					case RaftResultAcked, RaftResultLogsOutOfSync:
 						select {
 						case success <- struct{}{}:
-						default:
+						case <-time.After(SendChanTimeout):
 							log.Println("dropping result from replication, receiver blocked")
 						}
 					}
