@@ -1,12 +1,5 @@
 package main
 
-import "time"
-
-// SendChanTimeout is the maximum amount of time that a goroutine
-// should spend sending on a channel before dropping the value or assuming there's
-// no receiver on the other end
-var SendChanTimeout = 400 * time.Millisecond
-
 type replicate struct {
 	// replicated is used to signify an entry that have been successfully replicated
 	// on a peer

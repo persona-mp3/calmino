@@ -22,7 +22,7 @@ func wokerLoop(
 	term uint64,
 	raft *RaftState,
 ) {
-	ticker := time.NewTicker(time.Millisecond * 300)
+	ticker := time.NewTicker(time.Duration(HeartbeatInterval) * time.Millisecond)
 	defer func() {
 		ticker.Stop()
 		raft.UpdateState(StateFollower)
