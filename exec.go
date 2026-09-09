@@ -71,31 +71,31 @@ func singleProcessCluster(rc *RawConfig) {
 
 func multiProcessCluster(rc *RawConfig) {
 	// the multiprocess cluster needs all nodes to run on different processes.
-	// We still want this go process to be able to control the others, so we 
-	// might need to get a bit creative here. 
+	// We still want this go process to be able to control the others, so we
+	// might need to get a bit creative here.
 	// For each node, we'll have to do something like this
 	// os.Exec("./calmino").args("--config", "node-1-config.toml")
-	// the config can be generated at runtime. The need for the config is just to 
-	// tell calmino which ones it should run? or intead of a whole new config we 
-	// just run 
+	// the config can be generated at runtime. The need for the config is just to
+	// tell calmino which ones it should run? or intead of a whole new config we
+	// just run
 	// os.Exec("./calmino").args("--id", "1")
-	// where id is the position in the addr. 
+	// where id is the position in the addr.
 	// So when we recv --id we just know to run a single and at at the given index.
-	// The single one can also be used to run a single node so, we end up with best 
-	// of both worlds. 
+	// The single one can also be used to run a single node so, we end up with best
+	// of both worlds.
 	//
-	// The next thing is 
-	// 1. process control, 
+	// The next thing is
+	// 1. process control,
 	// 2. http_pproff_addr [we can enforce the config schema to provide addrs for other nodes]
 
-	// Process control might be tricky bcus I haven't done it in Go before where 
-	// a user doesn't need to kill all other processes directly, to stop the whole 
-	// cluster. Instead if quit this program, that kills all other processes 
-  // forked from it OR that it spawned. 
+	// Process control might be tricky bcus I haven't done it in Go before where
+	// a user doesn't need to kill all other processes directly, to stop the whole
+	// cluster. Instead if quit this program, that kills all other processes
+	// forked from it OR that it spawned.
 	// This also buys room for a control plane, where we can decide to kill a specific
-	// node in the cluster. WOW there's so much crazy things that can be done here 
-	// I can almost see k8 control plane staring at me from the corner. The peak of 
-	// this would be able to design the control plane across the network instead. 
+	// node in the cluster. WOW there's so much crazy things that can be done here
+	// I can almost see k8 control plane staring at me from the corner. The peak of
+	// this would be able to design the control plane across the network instead.
 	// Where I can kill and restart nodes
 
 }
