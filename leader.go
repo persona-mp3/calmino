@@ -11,9 +11,7 @@ func (n *Node) runLeader(mainCtx context.Context, serverErrCh chan error) error 
 	n.logger.Info("leader state started successfully")
 	handler := NewLeaderHandler(NodeId(n.id), n.logger)
 
-	// TASK Assume the candidate left connections open and persistent and start
-	// workers on them
-
+	// Assumes the candidate left connections open and persistent and start workers on them
 	currentTerm := n.raftState.CurrentTerm()
 	previousLogEntry := n.logStore.PreviousEntry()
 	commitIdx := n.logStore.CommitIndex()
@@ -46,6 +44,11 @@ func (n *Node) runLeader(mainCtx context.Context, serverErrCh chan error) error 
 
 	workersReturned := make(chan struct{})
 	go func() {
+		// this node only steps down from a leader, when at least a majority or all the 
+		// workers have returned if they have been refused to be acked. This is to 
+		// ensure that a single Follower in the cluster who perchance has a higher term
+		// does not negate the consensus if other Followers in the clusters are happy 
+		// with this leader. 
 		workerWg.Wait()
 		close(workersReturned)
 	}()
