@@ -17,3 +17,4 @@ persist = true
 heartbeat_interval = 800
 election_min = 1200
 election_max = 2200
+
