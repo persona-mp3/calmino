@@ -1,6 +1,4 @@
 addrs = ["localhost:4000", "localhost:4001", "localhost:4002"]
-# single_process runs all the nodes together as a single process
-# multi_process runs only one node from operate.addr on a host machine
 mode = "multi_process"  
 
 log_level = -4
@@ -9,7 +7,7 @@ log_level = -4
 log_format = 0
 http_pprof_addr = ["localhost:6061", "localhost:6062", "localhost:6063"]
 
-persist = true
+persist = false
 
 [raft_config]
 heartbeat_interval = 800
