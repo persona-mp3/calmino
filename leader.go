@@ -44,11 +44,10 @@ func (n *Node) runLeader(mainCtx context.Context, serverErrCh chan error) error 
 
 	workersReturned := make(chan struct{})
 	go func() {
-		// this node only steps down from a leader, when at least a majority or all the 
-		// workers have returned if they have been refused to be acked. This is to 
-		// ensure that a single Follower in the cluster who perchance has a higher term
-		// does not negate the consensus if other Followers in the clusters are happy 
-		// with this leader. 
+		// this node only steps down from a leader, the whole cluster refused to ack
+		// them through the workers. This is to ensure that a single Follower in the
+		// cluster who perchance has a higher term does not negate the consensus if
+		// other Followers in the clusters are happy with this leader.
 		workerWg.Wait()
 		close(workersReturned)
 	}()
