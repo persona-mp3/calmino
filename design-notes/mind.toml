@@ -1,9 +1,0 @@
-http_pprof_addr = ["localhost:6061", "localhost:6062", "localhost:6063"]
-addrs = ["localhost:4000", "localhost:4001", "localhost:4002"]
-# multi_process will also can also be aliased as "single_node", diff is that
-# the application itself is the only one running
-mode = "multi_process"
-
-# let's use 1-based indexing because of dev experience and pitfalls
-# ./calmino --id=1 -> http_pprof_addr[0], addr[0], peers=[0:]
-# ./calmino --id=2 -> http_pprof_addr[1], addr[1], peers=[1:] + [:1]

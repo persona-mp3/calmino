@@ -6,7 +6,7 @@ mode = "multi_process"
 # log_level starts at -4 DEBUG, 0 INFO, 4 WARN, 8 ERROR
 log_level = -4
 
-# log_format is 0 which is text logging and 1 for json structured logging
+# 0 represents normal text logging and 1 represents json structued logging
 log_format = 0
 http_pprof_addr = ["localhost:6061"]
 

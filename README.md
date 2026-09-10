@@ -9,6 +9,11 @@ a Raft Consensus implementation.
 ### Prerequistes
 - [Go](https://golang.org/) installed on your machine.
 
+### Clone the repository
+```bash
+git clone https://github.com/persona-mp3/calmino.git
+```
+
 ### Running the application
 ```bash
 go build .
@@ -20,7 +25,7 @@ Go's http pprof has already been integrated by default and is running on [http:/
 
 To change what address the server runs on, you can change this via the config file,
 ```bash
-http_pprof_addr = "localhost:port_number"
+http_pprof_addr = ["localhost:port_number"]
 ```
 
 
@@ -38,3 +43,4 @@ go test
 
 # Configuration
 To configure the Raft Cluster please see [config.sample.toml](./config.sample.toml)
+and [docs/configuration.md](./docs/configuration.md)
