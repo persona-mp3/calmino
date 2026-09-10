@@ -33,8 +33,9 @@ func main() {
 	if isFlagPassed("nodeId") {
 		nodeId = nodeId - 1
 		if nodeId < 0 {
-			// since we're using 1based index, automatically run the first one if user sepcified 0
-			nodeId += 1
+			// since we're using 1 based index, automatically run the first one if user sepcified 0
+			// and also helps if user provided a negative number
+			nodeId = 1
 			log.Println("[warn] index is not 0 based, running first node instead")
 		}
 		if err := runSingleNodeById(ctx, nodeId, rawConfig); err != nil {

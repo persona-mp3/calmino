@@ -72,7 +72,7 @@ func runMultiProcessCluster(ctx context.Context, rc *RawConfig) {
 
 	fmt.Println("waiting for all nodes to complete")
 	cmdWg.Wait()
-	fmt.Println("all nodes completed")
+	fmt.Println("tear down complete")
 }
 
 func createNodes(rc *RawConfig) []*Node {
