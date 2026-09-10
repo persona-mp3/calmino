@@ -52,6 +52,8 @@ func (w *Worker) Run(leaderCtx context.Context, initialReq AppendEntryRequest, p
 	for {
 		select {
 		case <-leaderCtx.Done():
+			w.logger.Info("worker exiting, ctx cancelled", "err", leaderCtx.Err())
+			return
 		case replicateReq := <-w.replicateCh:
 			req := replicateReq.req
 			reply := AppendEntryReply{}

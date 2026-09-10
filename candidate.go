@@ -51,9 +51,6 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 	)
 	_ = childCtx
 
-	// TASK 3: Write handlers for candidate
-	// TASK 4. Impl the VoteRPC Method
-
 	rpcPeers := connectToPeers("tcp", n.peers)
 	if len(rpcPeers) == 0 {
 		n.raftState.UpdateState(StateFollower)
@@ -61,7 +58,7 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 		return nil
 	}
 
-	// TASK 5. Impl caching rpc connections
+	// caching rpc connections to keep alive for leader to use
 	n.rpcConnections = rpcPeers
 	if candidate, granted := n.raftState.HasVotedFor(newTerm); granted {
 		err := NewCandidateError(newTerm, ErrElectingForPastTerm, granted, candidate, n.raftState.String())
@@ -114,7 +111,7 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 				if reply.Result == RaftResultAcked {
 					n.raftState.UpdateState(StateFollower)
 					payload.reply <- response
-					n.logger.Info("dropping down to follower from candidate")
+					n.logger.Info("dropping down to follower from candidate, higher appendEntry term", "req", req)
 					return nil
 				}
 				response = RPCReply{kind: RPCKindAppendEntry, payload: &reply}
@@ -126,7 +123,7 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 				response = RPCReply{kind: RPCKindVote, payload: &reply}
 				if reply.Result == RaftResultVoteGranted {
 					payload.reply <- response
-					n.logger.Info("dropping down to follower from candidate")
+					n.logger.Info("dropping down to follower from candidate, higher vote term", "req", req)
 					return nil
 				}
 				payload.reply <- response

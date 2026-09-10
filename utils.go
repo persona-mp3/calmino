@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -76,4 +77,16 @@ func connectToPeers(network string, addrs []string) []RPCConn {
 		rpcPeers = append(rpcPeers, &RPCPeer{id: id, addr: addr, conn: conn})
 	}
 	return rpcPeers
+}
+
+
+// isFlagPassed loops through all explicitly set flags to find a match
+func isFlagPassed(name string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
 }
