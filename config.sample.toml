@@ -1,7 +1,7 @@
 addrs = ["localhost:4000", "localhost:4001", "localhost:4002"]
 # single_process runs all the nodes together as a single process
 # multi_process runs only one node from operate.addr on a host machine
-mode = "multi_process"
+mode = "single_process"
 
 # log_level starts at -4 DEBUG, 0 INFO, 4 WARN, 8 ERROR
 log_level = -4
