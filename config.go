@@ -11,8 +11,8 @@ import (
 type clusterMode string
 
 const (
-	singleProcess clusterMode = "single_process"
-	singleNode    clusterMode = "single_node"
+	clusterModeSingleProcess           clusterMode = "single_process"
+	clusterModeMultiProcess clusterMode = "multi_process"
 )
 
 type RaftConfig struct {
@@ -26,7 +26,7 @@ type RawConfig struct {
 	Mode          clusterMode `toml:"mode"`
 	LogLevel      int         `toml:"log_level"`
 	LogFormat     int         `toml:"log_format"`
-	HTTPPprofAddr string      `toml:"http_pprof_addr"`
+	HTTPPprofAddr []string    `toml:"http_pprof_addr"`
 	RaftConfig    RaftConfig  `toml:"raft_config"`
 	Persist       bool        `toml:"persist"`
 }
