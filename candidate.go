@@ -79,7 +79,8 @@ func (n *Node) runCandidate(mainCtx context.Context, serverErrCh chan error) err
 	}
 
 	n.logger.Info("parading for", slog.Uint64("term", newTerm))
-	go collectOtherVotes(timeoutCtx, req, len(n.peers), rpcPeers, wonElection)
+	clusterSize := len(n.peers) + 1 // including itself
+	go collectOtherVotes(timeoutCtx, req, clusterSize, rpcPeers, wonElection)
 	handler := NewCandidateHandler(NodeId(n.id), n.logger)
 
 	for {
@@ -175,15 +176,19 @@ func collectOtherVotes(
 	timeoutCtx context.Context,
 	req VoteRequest,
 	clusterSize int,
-	peers []RPCConn,
+	peers map[string]RPCConn,
 	won chan bool,
 ) {
 	collectedVotes := atomic.Uint64{}
 	collectedVotes.Add(1)
 	newVote := make(chan struct{}, len(peers)*2)
 	majorityVote := (clusterSize / 2) + 1
+	fmt.Println("[debug] clusterSize", clusterSize, "majorityVote", majorityVote)
 
 	for _, peer := range peers {
+		if peer == nil {
+			continue
+		}
 		go func(peer RPCConn, voteCh chan struct{}) {
 			reply := VoteReply{}
 			if err := peer.Call("Server.VoteRPC", req, &reply); err != nil {
