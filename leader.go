@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
+	"net/rpc"
 	"sync"
+	"time"
 )
 
 func (n *Node) runLeader(mainCtx context.Context, serverErrCh chan error) error {
@@ -35,11 +38,44 @@ func (n *Node) runLeader(mainCtx context.Context, serverErrCh chan error) error 
 		PreviousLogTerm:  previousLogEntry.Term,
 		CommitIndex:      commitIdx,
 	}
-	for _, peer := range n.rpcConnections {
+	for addr, peer := range n.rpcConnections {
+		if peer == nil {
+			n.logger.Info("found a peer that has not been interlinked, taking slowpath", "addr", addr)
+			workerWg.Go(func() {
+				// slowPath
+				ticker := time.NewTicker(2000 * time.Millisecond)
+				failedAttempts := 0
+				var rpcConn *rpc.Client
+			DIAL_LOOP:
+				for {
+					select {
+					case <-mainCtx.Done():
+						n.logger.Info("[slow-path] exiting, context cancelled")
+						return
+					case <-ticker.C:
+						conn, err := rpc.Dial("tcp", addr)
+						if err != nil {
+							failedAttempts++
+							log.Printf("[slow-path] failed to reach %s after %d attempts", addr, failedAttempts)
+							ticker.Reset(2000 * time.Millisecond)
+						} else {
+							log.Printf("[slow-path] brother has being interlinked")
+							rpcConn = conn
+							break DIAL_LOOP
+						}
+					}
+				}
+
+				peer := NewRPCPeer("no-id", addr, rpcConn)
+				replicateCh := make(chan replicate)
+				worker := NewWorker(NodeId(n.id), currentTerm, n.logStore, replicateCh, n.logger)
+				worker.Run(leaderCtx, initialReq, peer)
+			})
+			continue
+		}
 		replicateCh := make(chan replicate)
 		worker := NewWorker(NodeId(n.id), currentTerm, n.logStore, replicateCh, n.logger)
 		workerWg.Go(func() { worker.Run(leaderCtx, initialReq, peer) })
-
 	}
 
 	workersReturned := make(chan struct{})

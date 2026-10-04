@@ -65,20 +65,20 @@ func startPprofServer(addr string) error {
 	return nil
 }
 
-func connectToPeers(network string, addrs []string) []RPCConn {
-	rpcPeers := []RPCConn{}
+func connectToPeers(network string, addrs []string) map[string]RPCConn {
+	rpcPeers := make(map[string]RPCConn)
 	for idx, addr := range addrs {
 		conn, err := rpc.Dial(network, addr)
 		if err != nil {
 			log.Printf("[err] could not dial %s. reason: %s\n", addr, err)
+			rpcPeers[addr] = nil
 			continue
 		}
 		id := strconv.Itoa(idx)
-		rpcPeers = append(rpcPeers, &RPCPeer{id: id, addr: addr, conn: conn})
+		rpcPeers[addr] = &RPCPeer{id: id, addr: addr, conn: conn}
 	}
 	return rpcPeers
 }
-
 
 // isFlagPassed loops through all explicitly set flags to find a match
 func isFlagPassed(name string) bool {

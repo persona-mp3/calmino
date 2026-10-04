@@ -11,8 +11,8 @@ import (
 type clusterMode string
 
 const (
-	clusterModeSingleProcess           clusterMode = "single_process"
-	clusterModeMultiProcess clusterMode = "multi_process"
+	clusterModeSingleProcess clusterMode = "single_process"
+	clusterModeMultiProcess  clusterMode = "multi_process"
 )
 
 type RaftConfig struct {

@@ -56,16 +56,41 @@ func singleProcessCluster(rc *RawConfig) {
 }
 
 func runMultiProcessCluster(ctx context.Context, rc *RawConfig) {
+	if true {
+		log.Fatal("feature multi_process is under update please change to single_process")
+	}
+
 	clusterSize := len(rc.Addrs)
 
 	allCommands := []*exec.Cmd{}
 	cmdWg := sync.WaitGroup{}
 	for idx := range clusterSize {
 		cmd := exec.CommandContext(ctx, "./calmino", "--nodeId", strconv.Itoa(idx+1))
+		fmt.Println("args being passed on", cmd.Args)
 		allCommands = append(allCommands, cmd)
 		cmdWg.Go(func() {
-			if err := cmd.Run(); err != nil {
+			stderr, err := cmd.StderrPipe()
+			if err != nil {
+				log.Printf("[error] failed to get stderr of %d. reason: %s\n", idx, err)
+				return
+			}
+			if err := cmd.Start(); err != nil {
 				log.Printf("[error] starting %d. reason: %s\n", idx, err)
+				for {
+					buff := make([]byte, 1000)
+					n, err := stderr.Read(buff)
+					if err != nil {
+						log.Println("[error] reading from stderr", err)
+						return
+					}
+
+					fmt.Printf("%s\n", buff[:n])
+
+				}
+			}
+
+			if err := cmd.Wait(); err != nil {
+				log.Printf("[error] failed to run %d. reason: %s\n", idx, err)
 			}
 		})
 	}

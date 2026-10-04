@@ -1,5 +1,7 @@
 package main
 
+import db "calmino/database"
+
 type RPCKind string
 
 const (
@@ -70,4 +72,8 @@ type VoteReply struct {
 	Message          string
 	PreviousLogIndex uint64
 	PreviousLogTerm  uint64
+}
+
+type Command struct {
+	db.KV
 }

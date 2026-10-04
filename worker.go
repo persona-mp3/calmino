@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"net/rpc"
 	"time"
 )
 
@@ -48,6 +49,7 @@ func (w *Worker) Run(leaderCtx context.Context, initialReq AppendEntryRequest, p
 
 	prevLogEntry := w.store.PreviousEntry()
 	commitIdx := w.store.CommitIndex()
+	failedDials := 0
 
 	for {
 		select {
@@ -58,9 +60,21 @@ func (w *Worker) Run(leaderCtx context.Context, initialReq AppendEntryRequest, p
 			req := replicateReq.req
 			reply := AppendEntryReply{}
 			if err := peer.Call("Server.AppendEntryRPC", req, &reply); err != nil {
-				w.logger.Error("failed to send replication request to", "peer", peer.Id(), "err", err)
+				w.logger.Error("failed to send replication request to",
+					"peer", peer.Id(), "err", err, "failedDials", failedDials)
+				w.logger.Info("trying to dial again", "addr of follower", peer.Addr(), "id", peer.Id())
+				client, err := rpc.Dial("tcp", peer.Addr())
+				if err != nil {
+					failedDials++
+					w.logger.Info("failed to dial", "addr", peer.Addr(), "totalFails", failedDials)
+					continue
+				}
+
+				peer = NewRPCPeer(peer.Id(), peer.Addr(), client)
+				w.logger.Info("successfully reconnected with lost bro")
 				continue
 			}
+			failedDials = 0
 
 			switch reply.Result {
 			case RaftResultAcked, RaftResultLogsOutOfSync:
@@ -84,10 +98,22 @@ func (w *Worker) Run(leaderCtx context.Context, initialReq AppendEntryRequest, p
 			reply := AppendEntryReply{}
 			// TODO: Add retrials just incase
 			if err := peer.Call("Server.AppendEntryRPC", initialReq, &reply); err != nil {
-				w.logger.Error("failed to send heertbeat request to", "peer", peer.Id(), "err", err)
+				w.logger.Error("failed to send heartbeat request to", "peer", peer.Id(),
+					"err", err, "failedDials", failedDials)
+				failedDials++
+				client, err := rpc.Dial("tcp", peer.Addr())
+				if err != nil {
+					failedDials++
+					w.logger.Info("failed to dial", "addr", peer.Addr(), "totalFails", failedDials)
+					continue
+				}
+
+				peer = NewRPCPeer(peer.Id(), peer.Addr(), client)
+				w.logger.Info("successfully reconnected with lost bro")
 				continue
 			}
 
+			failedDials = 0
 			switch reply.Result {
 			case RaftResultAcked:
 				log.Printf("follower acked: %s %+v\n", reply.Id, reply)
